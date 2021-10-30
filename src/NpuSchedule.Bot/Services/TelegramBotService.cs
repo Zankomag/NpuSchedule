@@ -61,27 +61,27 @@ namespace NpuSchedule.Bot.Services {
 			switch(command.ToLower()) {
 				case "/today":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDaySchedule(ScheduleDay.Today);
+						await SendDayScheduleAsync(ScheduleDay.Today);
 					}
 					break;
 				case "/tomorrow":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDaySchedule(ScheduleDay.Tomorrow);
+						await SendDayScheduleAsync(ScheduleDay.Tomorrow);
 					}
 					break;
 				case "/closest":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDaySchedule(ScheduleDay.Closest);
+						await SendDayScheduleAsync(ScheduleDay.Closest);
 					}
 					break;
 				case "/week":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekSchedule(ScheduleWeek.Current);
+						await SendWeekScheduleAsync(ScheduleWeek.Current);
 					}
 					break;
 				case "/nextweek":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekSchedule(ScheduleWeek.Next);
+						await SendWeekScheduleAsync(ScheduleWeek.Next);
 					}
 					break;
 				case "/health":
@@ -120,13 +120,13 @@ namespace NpuSchedule.Bot.Services {
 		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
 
 		/// <inheritdoc />
-		public async Task SendDaySchedule(DateTime date) => TODO_IMPLEMENT_ME;
+		public async Task SendDayScheduleAsync(DateTime date) => throw new NotImplementedException();
 
 		/// <inheritdoc />
-		public async Task SendDaySchedule(ScheduleDay scheduleDay) => TODO_IMPLEMENT_ME;
+		public async Task SendDayScheduleAsync(ScheduleDay scheduleDay) => TODO_IMPLEMENT_ME;
 
 		/// <inheritdoc />
-		public async Task SendWeekSchedule(ScheduleWeek scheduleWeek) => TODO_IMPLEMENT_ME;
+		public async Task SendWeekScheduleAsync(ScheduleWeek scheduleWeek) => TODO_IMPLEMENT_ME;
 
 	}
 

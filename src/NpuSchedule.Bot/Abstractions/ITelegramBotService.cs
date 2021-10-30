@@ -16,9 +16,9 @@ namespace NpuSchedule.Bot.Abstractions {
 
 		bool IsTokenCorrect(string token);
 
-		Task SendDaySchedule(DateTime date);
-		Task SendDaySchedule(ScheduleDay scheduleDay);
-		Task SendWeekSchedule(ScheduleWeek scheduleWeek);
+		Task SendDayScheduleAsync(DateTime date);
+		Task SendDayScheduleAsync(ScheduleDay scheduleDay);
+		Task SendWeekScheduleAsync(ScheduleWeek scheduleWeek);
 
 	}
 
