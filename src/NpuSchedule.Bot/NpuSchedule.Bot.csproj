@@ -25,7 +25,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NpuSchedule.Core\NpuSchedule.Core.csproj" />
-			<ProjectReference Include="..\NpuSchedule.Common\NpuSchedule.Common.csproj"/>
+			<ProjectReference Include="..\NpuSchedule.Common\NpuSchedule.Common.csproj" />
     </ItemGroup>
 
     <ItemGroup>

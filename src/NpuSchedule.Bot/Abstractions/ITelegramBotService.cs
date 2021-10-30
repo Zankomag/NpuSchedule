@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using NpuSchedule.Bot.Enums;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 
@@ -13,6 +15,10 @@ namespace NpuSchedule.Bot.Abstractions {
 		Task HandleUpdateAsync(Update update);
 
 		bool IsTokenCorrect(string token);
+
+		Task SendDaySchedule(DateTime date);
+		Task SendDaySchedule(ScheduleDay scheduleDay);
+		Task SendWeekSchedule(ScheduleWeek scheduleWeek);
 
 	}
 

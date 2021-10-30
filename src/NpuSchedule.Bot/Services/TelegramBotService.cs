@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
+using NpuSchedule.Bot.Enums;
 using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Abstractions;
 using Telegram.Bot;
@@ -60,16 +61,31 @@ namespace NpuSchedule.Bot.Services {
 			switch(command.ToLower()) {
 				case "/today":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await client.SendTextMessageAsync(message.Chat.Id, "today");
+						await SendDaySchedule(ScheduleDay.Today);
 					}
 					break;
 				case "/tomorrow":
-					if(options.IsUserAdmin(message.From.Id)) {
-						await client.SendTextMessageAsync(message.Chat.Id, "tomorrow");
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendDaySchedule(ScheduleDay.Tomorrow);
+					}
+					break;
+				case "/closest":
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendDaySchedule(ScheduleDay.Closest);
+					}
+					break;
+				case "/week":
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendWeekSchedule(ScheduleWeek.Current);
+					}
+					break;
+				case "/nextweek":
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendWeekSchedule(ScheduleWeek.Next);
 					}
 					break;
 				case "/health":
-					if(options.IsUserAdmin(message.From.Id)) {
+					if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
 						await client.SendTextMessageAsync(message.From.Id, $"Running\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
 					}
 					break;
@@ -102,6 +118,15 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
+
+		/// <inheritdoc />
+		public async Task SendDaySchedule(DateTime date) => TODO_IMPLEMENT_ME;
+
+		/// <inheritdoc />
+		public async Task SendDaySchedule(ScheduleDay scheduleDay) => TODO_IMPLEMENT_ME;
+
+		/// <inheritdoc />
+		public async Task SendWeekSchedule(ScheduleWeek scheduleWeek) => TODO_IMPLEMENT_ME;
 
 	}
 
