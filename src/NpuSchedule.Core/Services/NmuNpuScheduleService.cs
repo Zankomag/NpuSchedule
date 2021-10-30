@@ -16,9 +16,11 @@ namespace NpuSchedule.Core.Services {
 	/// </summary>
 	public class NmuNpuScheduleService : INpuScheduleService {
 
+		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
 		
 		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger) {
+			this.options = options.Value;
 			this.logger = logger;
 		}
 
