@@ -16,9 +16,9 @@ namespace NpuSchedule.Bot.Configs {
 		public string Token { get; init;  }
 		public long[] AdminIds { get; init;  }
 		
-		[Required]
-		[FormatStringPlaceholderIndexesCount(5)]
-		public string CurrencyRateMarkdownMessageTemplate { get; init; }
+		//[Required]
+		//[FormatStringPlaceholderIndexesCount(5)]
+		//public string ScheduleDayMessageMessageTemplate { get; init; }
 
 		public bool IsUserAdmin(long userId) => AdminIds.Contains(userId);
 

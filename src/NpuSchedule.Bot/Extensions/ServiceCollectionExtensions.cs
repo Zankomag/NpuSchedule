@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
 using NpuSchedule.Bot.Services;
+using NpuSchedule.Common.Extensions;
 
 namespace NpuSchedule.Bot.Extensions {
 

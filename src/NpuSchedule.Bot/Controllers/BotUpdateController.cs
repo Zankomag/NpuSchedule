@@ -1,6 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using NpuSchedule.Bot.Abstractions;
+using NpuSchedule.Common.Utils;
+using Telegram.Bot.Types;
 
 namespace NpuSchedule.Bot.Controllers {
 
@@ -15,8 +17,9 @@ namespace NpuSchedule.Bot.Controllers {
 
 		[HttpPost("{token}")]
 		public async Task<IActionResult> PostUpdate([FromBody] Update update, string token) {
-			//TODO check token
-			await telegramBotService.HandleUpdateAsync(update);
+			if(telegramBotService.IsTokenCorrect(token)) {
+				await telegramBotService.HandleUpdateAsync(update);
+			}
 			return Ok();
 		}
 

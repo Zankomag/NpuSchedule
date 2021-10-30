@@ -5,6 +5,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
+using NpuSchedule.Common.Utils;
+using Telegram.Bot;
+using Telegram.Bot.Extensions.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.InlineQueryResults;
 
 // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
 
@@ -14,7 +20,6 @@ namespace NpuSchedule.Bot.Services {
 	public class TelegramBotService : ITelegramBotService {
 		
 		private readonly TelegramBotClient client;
-		private readonly ICryptoClient cryptoClient;
 		private readonly ILogger<TelegramBotService> logger;
 		private readonly DateTime startTime;
 
@@ -24,8 +29,7 @@ namespace NpuSchedule.Bot.Services {
 		/// <inheritdoc />
 		public UpdateType[] AllowedUpdates { get; } = { UpdateType.Message, UpdateType.InlineQuery };
 
-		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ICryptoClient cryptoClient, ILogger<TelegramBotService> logger) {
-			this.cryptoClient = cryptoClient;
+		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger) {
 			this.logger = logger;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
@@ -51,13 +55,11 @@ namespace NpuSchedule.Bot.Services {
 
 			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
 			switch(command.ToLower()) {
-				case "/btc":
-				case "/btctousd":
-					await SendCurrencyRateAsync(message.Chat.Id, CurrencyCode.Bitcoin, CurrencyCode.Usd);
+				case "/today":
+					
 					break;
-				case "/eth":
-				case "/ethtousd":
-					await SendCurrencyRateAsync(message.Chat.Id, CurrencyCode.Ethereum, CurrencyCode.Usd);
+				case "/tomorrow":
+					
 					break;
 				case "/health":
 					if(options.IsUserAdmin(message.From.Id)) {
@@ -67,35 +69,7 @@ namespace NpuSchedule.Bot.Services {
 			}
 		}
 
-		public async Task<Message> SendCurrencyRateAsync(long chatId, string currencyBase, string currencyQuote)
-			=> await SendCurrencyRateAsync(chatId,
-				await cryptoClient.GetCurrencyRateAsync(currencyBase, currencyQuote),
-				currencyBase.GetCurrencyCharByCode(),
-				currencyQuote.GetCurrencyCharByCode());
-
-		public async Task HandleInlineQueryAsync(InlineQuery inlineQuery) {
-			if(options.IsUserAdmin(inlineQuery.From.Id)) {
-				Random random = new();
-				string baseCurrency, quoteCurrency;
-				if(String.IsNullOrWhiteSpace(inlineQuery.Query)) {
-					baseCurrency = CurrencyCode.Bitcoin;
-					quoteCurrency = CurrencyCode.Usd;
-				} else {
-					var currencyCodes = inlineQuery.Query.Split(' ');
-					baseCurrency = currencyCodes[0].ToUpper();
-					quoteCurrency = currencyCodes.Length > 1 ? currencyCodes[1].ToUpper() : CurrencyCode.Usd;
-				}
-				
-				var currencyRate = await cryptoClient.GetCurrencyRateAsync(baseCurrency, quoteCurrency);
-				await client.AnswerInlineQueryAsync(inlineQuery.Id,
-					new[] {
-						new InlineQueryResultCachedSticker(Guid.NewGuid().ToString(), random.Next(0, 2) > 0 ? options.GreenStickerFileId : options.RedStickerFileId) {
-							InputMessageContent = new InputTextMessageContent(GetCurrencyRateMessage(currencyRate, baseCurrency.GetCurrencyCharByCode(), quoteCurrency.GetCurrencyCharByCode()))
-								{ ParseMode = ParseMode.Markdown }
-						}
-					});
-			}
-		}
+		public Task HandleInlineQueryAsync(InlineQuery inlineQuery) => Task.CompletedTask;
 
 		/// <inheritdoc />
 		async Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => await HandleUpdateAsync(update);
@@ -115,37 +89,12 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		/// <inheritdoc />
-		public Task HandleError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken) =>
-
-			//TODO Log exception
-			Task.CompletedTask;
-
-		//TODO Add Async suffix here and everywhere we need
-		public async Task<Message> SendCurrencyRateAsync(long chatId, Exchangerate currencyRate, string baseCurrencyChar, string quoteCurrencyChar) {
-			string message = GetCurrencyRateMessage(currencyRate, baseCurrencyChar, quoteCurrencyChar);
-
-			var result = await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
-			return result;
+		public Task HandleError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken) {
+			logger.LogError(exception, "Received an exception from Telegram Bot API");
+			return Task.CompletedTask;
 		}
 
-		private string GetCurrencyRateMessage(Exchangerate currencyRate, string baseCurrencyChar, string quoteCurrencyChar) {
-			if(currencyRate != null) {
-				string currencySignAndAmountSeparator = null;
-
-				//This is used to make output more convenient if there is no char for currency code (USD500 vs USD 500)
-				if(quoteCurrencyChar == currencyRate.asset_id_quote)
-					currencySignAndAmountSeparator = " ";
-				return String.Format(options.CurrencyRateMarkdownMessageTemplate,
-					baseCurrencyChar,
-					quoteCurrencyChar,
-					currencyRate.rate,
-					currencyRate.time.Date.ToString("dd/MM/yyyy"),
-					currencySignAndAmountSeparator);
-			}
-			return "Sorry, I've received an error from CoinAPI. Make sure limits are not drained.";
-
-			//TODO Add handler if currency code in request was wrong (in crypto client)
-		}
+		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
 
 	}
 
