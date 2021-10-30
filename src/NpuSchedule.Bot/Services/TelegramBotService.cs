@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
 using NpuSchedule.Common.Utils;
+using NpuSchedule.Core.Abstractions;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -21,6 +22,7 @@ namespace NpuSchedule.Bot.Services {
 		
 		private readonly TelegramBotClient client;
 		private readonly ILogger<TelegramBotService> logger;
+		private readonly INpuScheduleService npuScheduleService;
 		private readonly DateTime startTime;
 
 		private readonly TelegramBotOptions options;
@@ -29,8 +31,9 @@ namespace NpuSchedule.Bot.Services {
 		/// <inheritdoc />
 		public UpdateType[] AllowedUpdates { get; } = { UpdateType.Message, UpdateType.InlineQuery };
 
-		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger) {
+		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger, INpuScheduleService npuScheduleService) {
 			this.logger = logger;
+			this.npuScheduleService = npuScheduleService;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
 			//TODO workaround this so it won't block

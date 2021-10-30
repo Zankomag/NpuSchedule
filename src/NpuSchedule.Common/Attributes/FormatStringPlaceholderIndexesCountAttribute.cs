@@ -29,8 +29,7 @@ namespace NpuSchedule.Common.Attributes {
 			this.placeholderIndexesCount = placeholderIndexesCount;
 			this.propertyName = propertyName;
 		}
-
-		//TODO add unit tests
+		
 		protected override ValidationResult IsValid(object value, ValidationContext validationContext) {
 			if(value is not string format)
 				return ValidationResult.Success;
