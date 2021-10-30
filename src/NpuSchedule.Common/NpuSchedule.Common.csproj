@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+				<TargetFramework>net5.0</TargetFramework>
+				<UserSecretsId>b43ad939-bbba-4d51-b5d9-0bce27b06d84</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+			<PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
+			<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="5.0.0" />
+			<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+			<PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
+			<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.0" />
+    </ItemGroup>
+
+</Project>
