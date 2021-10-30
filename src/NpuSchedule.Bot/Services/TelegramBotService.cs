@@ -59,10 +59,14 @@ namespace NpuSchedule.Bot.Services {
 			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
 			switch(command.ToLower()) {
 				case "/today":
-					
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await client.SendTextMessageAsync(message.Chat.Id, "today");
+					}
 					break;
 				case "/tomorrow":
-					
+					if(options.IsUserAdmin(message.From.Id)) {
+						await client.SendTextMessageAsync(message.Chat.Id, "tomorrow");
+					}
 					break;
 				case "/health":
 					if(options.IsUserAdmin(message.From.Id)) {
