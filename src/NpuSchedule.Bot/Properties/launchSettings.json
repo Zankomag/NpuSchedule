@@ -15,9 +15,9 @@
         "EnvironmentName": "Development"
       }
     },
-    "CryptoRate.Bot": {
+    "NpuSchedule.Bot LOCAL DEV": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "environmentVariables": {
         "EnvironmentName": "Development"
       },
