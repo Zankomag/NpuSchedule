@@ -17,8 +17,7 @@ using Telegram.Bot.Types.InlineQueryResults;
 // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
 
 namespace NpuSchedule.Bot.Services {
-
-//TODO add inline mode for getting rate in any chat
+	
 	public class TelegramBotService : ITelegramBotService {
 		
 		private readonly TelegramBotClient client;
@@ -44,9 +43,8 @@ namespace NpuSchedule.Bot.Services {
 
 		public async Task HandleMessageAsync(Message message) {
 			//bot doesn't read old messages to avoid /*spam*/ 
-			// DISABLED DUE TO LAMBDA ISSUES
-			//TODO fix end enable
-			//if(message.Date < startTime) return;
+			//2 minutes threshold due to slow start of aws lambda
+			if(message.Date < startTime.AddMinutes(-2)) return;
 
 			//If command contains bot username we need to exclude it from command (/btc@MyBtcBot should be /btc)
 			int atIndex = message.Text.IndexOf('@');
