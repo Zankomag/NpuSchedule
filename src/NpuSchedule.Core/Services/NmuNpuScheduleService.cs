@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using AngleSharp;
 using Microsoft.Extensions.Logging;
@@ -7,6 +10,7 @@ using Microsoft.Extensions.Options;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Configs;
 using NpuSchedule.Core.Enums;
+using NpuSchedule.Core.Extensions;
 using NpuSchedule.Core.Models;
 
 namespace NpuSchedule.Core.Services {
@@ -18,7 +22,7 @@ namespace NpuSchedule.Core.Services {
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
-		
+
 		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger) {
 			this.options = options.Value;
 			this.logger = logger;
@@ -47,8 +51,26 @@ namespace NpuSchedule.Core.Services {
 			return null;
 		}
 
+		//TODO inject HttpClient
 		/// <inheritdoc />
-		public async Task<string> GetRawHtmlScheduleResponse(DateTime startDate, DateTime endDate, string groupName = null) => TODO_IMPLEMENT_ME;
+		public async Task<string> GetRawHtmlScheduleResponse(DateTime startDate, DateTime endDate, string groupName = null) {
+			groupName ??= options.DefaultGroupName;
+			
+			var content = new Dictionary<string, string> {
+				{ "sdate", startDate.ToString("dd.MM.yyyy") },
+				{ "edate", endDate.ToString("dd.MM.yyyy") },
+				{ "group", groupName },
+			};
+			var contentBytes = content.GetWindows1251EncodedContentByteArray();
+			HttpClient client = new HttpClient();
+			client.BaseAddress = new Uri(@"http://nmu.npu.edu.ua");
+			
+			//n=700 should be as url parameter, otherwise it doesn't work
+			var response = await client.PostAsync(@$"cgi-bin/timetable.cgi?n=700", new ByteArrayContent(contentBytes));
+
+			var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
+			return responseContentBytes.FromWindows1251();
+		}
 
 	}
 
