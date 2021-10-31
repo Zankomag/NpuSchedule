@@ -5,7 +5,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
+using NpuSchedule.Core.Enums;
 using NpuSchedule.Common.Utils;
+using NpuSchedule.Core.Abstractions;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -15,12 +17,12 @@ using Telegram.Bot.Types.InlineQueryResults;
 // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
 
 namespace NpuSchedule.Bot.Services {
-
-//TODO add inline mode for getting rate in any chat
+	
 	public class TelegramBotService : ITelegramBotService {
 		
 		private readonly TelegramBotClient client;
 		private readonly ILogger<TelegramBotService> logger;
+		private readonly INpuScheduleService npuScheduleService;
 		private readonly DateTime startTime;
 
 		private readonly TelegramBotOptions options;
@@ -29,8 +31,9 @@ namespace NpuSchedule.Bot.Services {
 		/// <inheritdoc />
 		public UpdateType[] AllowedUpdates { get; } = { UpdateType.Message, UpdateType.InlineQuery };
 
-		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger) {
+		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger, INpuScheduleService npuScheduleService) {
 			this.logger = logger;
+			this.npuScheduleService = npuScheduleService;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
 			//TODO workaround this so it won't block
@@ -40,9 +43,8 @@ namespace NpuSchedule.Bot.Services {
 
 		public async Task HandleMessageAsync(Message message) {
 			//bot doesn't read old messages to avoid /*spam*/ 
-			// DISABLED DUE TO LAMBDA ISSUES
-			//TODO fix end enable
-			//if(message.Date < startTime) return;
+			//2 minutes threshold due to slow start of aws lambda
+			if(message.Date < startTime.AddMinutes(-2)) return;
 
 			//If command contains bot username we need to exclude it from command (/btc@MyBtcBot should be /btc)
 			int atIndex = message.Text.IndexOf('@');
@@ -56,13 +58,32 @@ namespace NpuSchedule.Bot.Services {
 			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
 			switch(command.ToLower()) {
 				case "/today":
-					
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendDayScheduleAsync(RelativeScheduleDay.Today);
+					}
 					break;
 				case "/tomorrow":
-					
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow);
+					}
+					break;
+				case "/closest":
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendDayScheduleAsync(RelativeScheduleDay.Closest);
+					}
+					break;
+				case "/week":
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendWeekScheduleAsync(RelativeScheduleWeek.Current);
+					}
+					break;
+				case "/nextweek":
+					if(options.IsChatAllowed(message.Chat.Id)) {
+						await SendWeekScheduleAsync(RelativeScheduleWeek.Next);
+					}
 					break;
 				case "/health":
-					if(options.IsUserAdmin(message.From.Id)) {
+					if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
 						await client.SendTextMessageAsync(message.From.Id, $"Running\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
 					}
 					break;
@@ -95,6 +116,15 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
+
+		/// <inheritdoc />
+		public async Task SendDayScheduleAsync(DateTime date) => throw new NotImplementedException();
+
+		/// <inheritdoc />
+		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay) => throw new NotImplementedException();
+
+		/// <inheritdoc />
+		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek) => throw new NotImplementedException();
 
 	}
 
