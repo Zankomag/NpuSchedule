@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="AngleSharp" Version="0.16.1" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="5.0.0" />
 			<Reference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
@@ -12,10 +13,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NpuSchedule.Common\NpuSchedule.Common.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Enums" />
     </ItemGroup>
 
 </Project>
