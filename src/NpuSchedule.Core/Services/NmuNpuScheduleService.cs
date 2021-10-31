@@ -24,12 +24,14 @@ namespace NpuSchedule.Core.Services {
 			this.logger = logger;
 		}
 
-		public async Task<ScheduleDay> GetDayScheduleAsync(RelativeScheduleDay relativeScheduleDay)
+		/// <inheritdoc />
+		public async Task<ScheduleDay> GetDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, string groupName = null)
 		{
 			throw new NotImplementedException();
 		}
 
-		public async Task<List<ScheduleDay>> GetWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek)
+		/// <inheritdoc />
+		public async Task<List<ScheduleDay>> GetWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, string groupName = null)
 		{
 			throw new NotImplementedException();
 		}
@@ -44,6 +46,10 @@ namespace NpuSchedule.Core.Services {
             
 			return null;
 		}
+
+		/// <inheritdoc />
+		public async Task<string> GetRawHtmlScheduleResponse(DateTime startDate, DateTime endDate, string groupName = null) => TODO_IMPLEMENT_ME;
+
 	}
 
 }
