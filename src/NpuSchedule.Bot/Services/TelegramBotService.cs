@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
-using NpuSchedule.Bot.Enums;
+using NpuSchedule.Core.Enums;
 using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Abstractions;
 using Telegram.Bot;
@@ -59,27 +59,27 @@ namespace NpuSchedule.Bot.Services {
 			switch(command.ToLower()) {
 				case "/today":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(ScheduleDay.Today);
+						await SendDayScheduleAsync(RelativeScheduleDay.Today);
 					}
 					break;
 				case "/tomorrow":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(ScheduleDay.Tomorrow);
+						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow);
 					}
 					break;
 				case "/closest":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(ScheduleDay.Closest);
+						await SendDayScheduleAsync(RelativeScheduleDay.Closest);
 					}
 					break;
 				case "/week":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekScheduleAsync(ScheduleWeek.Current);
+						await SendWeekScheduleAsync(RelativeScheduleWeek.Current);
 					}
 					break;
 				case "/nextweek":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekScheduleAsync(ScheduleWeek.Next);
+						await SendWeekScheduleAsync(RelativeScheduleWeek.Next);
 					}
 					break;
 				case "/health":
@@ -121,10 +121,10 @@ namespace NpuSchedule.Bot.Services {
 		public async Task SendDayScheduleAsync(DateTime date) => throw new NotImplementedException();
 
 		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(ScheduleDay scheduleDay) => TODO_IMPLEMENT_ME;
+		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay) => throw new NotImplementedException();
 
 		/// <inheritdoc />
-		public async Task SendWeekScheduleAsync(ScheduleWeek scheduleWeek) => TODO_IMPLEMENT_ME;
+		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek) => throw new NotImplementedException();
 
 	}
 
