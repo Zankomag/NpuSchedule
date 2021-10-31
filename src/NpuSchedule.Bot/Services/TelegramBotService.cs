@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -8,6 +11,7 @@ using NpuSchedule.Bot.Configs;
 using NpuSchedule.Core.Enums;
 using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Abstractions;
+using NpuSchedule.Core.Models;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -59,27 +63,27 @@ namespace NpuSchedule.Bot.Services {
 			switch(command.ToLower()) {
 				case "/today":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Today);
+						await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id);
 					}
 					break;
 				case "/tomorrow":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow);
+						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id);
 					}
 					break;
 				case "/closest":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Closest);
+						await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id);
 					}
 					break;
 				case "/week":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekScheduleAsync(RelativeScheduleWeek.Current);
+						await SendWeekScheduleAsync(RelativeScheduleWeek.Current, message.Chat.Id);
 					}
 					break;
 				case "/nextweek":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekScheduleAsync(RelativeScheduleWeek.Next);
+						await SendWeekScheduleAsync(RelativeScheduleWeek.Next, message.Chat.Id);
 					}
 					break;
 				case "/health":
@@ -118,14 +122,94 @@ namespace NpuSchedule.Bot.Services {
 		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
 
 		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(DateTime date) => throw new NotImplementedException();
+		public async Task SendDayScheduleAsync(DateTime date, long chatId) => throw new NotImplementedException();
 
 		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay) => throw new NotImplementedException();
+		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId) {
+			
+			try {
+
+
+				string message = GetSingleScheduleDayMessage(scheduleDay, "42ИПЗ");
+				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
+			} catch(Exception ex) {
+				logger.LogError(ex, "Received exception");
+			}
+		}
 
 		/// <inheritdoc />
-		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek) => throw new NotImplementedException();
+		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId) => throw new NotImplementedException();
 
+		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, string groupName) {
+			
+			string scheduleDayClasses = null;
+			if(!scheduleDay.Classes.Any()) {
+				scheduleDayClasses = options.NoClassesMessage;
+			} else {
+				StringBuilder scheduleDayClassesBuilder = new StringBuilder();
+				for(int i = 0; i < scheduleDay.Classes.Count; i++) {
+					var item = scheduleDay.Classes[i];
+					scheduleDayClassesBuilder.AppendFormat(options.ScheduleClassMessageTemplate,
+						item.Number,
+						item.StartTime,
+						item.EndTime,
+						GetClassInfoMessage(item.FirstClass),
+						item.SecondClass != null ? options.ClassInfoSeparator : null,
+						item.SecondClass != null ? GetClassInfoMessage(item.SecondClass) : null,
+						i < scheduleDay.Classes.Count - 1 ? options.ScheduleClassSeparator : null); 
+				}
+				scheduleDayClasses = scheduleDayClassesBuilder.ToString();
+			}
+			return String.Format(options.SingleScheduleDayMessageTemplate, scheduleDay.Date, groupName, scheduleDayClasses);
+		}
+
+		private string GetClassInfoMessage(ClassInfo classInfo)
+			=> String.Format(options.ScheduleClassInfoMessageTemplate,
+					GetClassInfoField(classInfo.DisciplineName),
+					GetClassInfoField(classInfo.Teacher),
+					GetClassInfoField(classInfo.Classroom),
+					GetClassInfoField(classInfo.OnlineMeetingUrl));
+
+		private string GetClassInfoField(string classInfoField)
+			=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
+
+		//TODO delete this
+		private ScheduleDay scheduleDay = new ScheduleDay() {
+			Date = DateTime.Now,
+			Classes = new List<Class> {
+				new Class() {
+					StartTime = new TimeSpan(12, 30, 0),
+					EndTime = new TimeSpan(14, 50, 0),
+					Number = 1,
+					FirstClass = new ClassInfo() {
+						Classroom = "urban central",
+						DisciplineName = "math",
+						OnlineMeetingUrl = null,
+						Teacher = "Savina"
+					},
+					SecondClass = null
+				},
+				new Class() {
+					StartTime = new TimeSpan(16, 0, 0),
+					EndTime = new TimeSpan(17, 20, 0),
+					Number = 3,
+					FirstClass = new ClassInfo() {
+						Classroom = null,
+						DisciplineName = "ukr",
+						OnlineMeetingUrl = "https://meet.com",
+						Teacher = "Savina"
+					},
+					SecondClass = new ClassInfo() {
+						Classroom = "urban central",
+						DisciplineName = "math",
+						OnlineMeetingUrl = null,
+						Teacher = "Savina"
+					}
+				}
+			}
+		};
+
+		
 	}
 
 }
