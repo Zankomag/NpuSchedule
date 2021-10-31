@@ -16,9 +16,6 @@ namespace NpuSchedule.Core.Abstractions {
 
 		Task<List<ScheduleDay>> GetScheduleAsync(string rawHtmlCode);
 
-		/// <param name="groupName">If groupName is null - default group name will be used</param>
-		Task<string> GetRawHtmlScheduleResponse(DateTime startDate, DateTime endDate, string groupName = null);
-
 	}
 
 }

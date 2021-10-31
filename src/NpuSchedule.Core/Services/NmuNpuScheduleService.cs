@@ -52,8 +52,7 @@ namespace NpuSchedule.Core.Services {
 		}
 
 		//TODO inject HttpClient
-		/// <inheritdoc />
-		public async Task<string> GetRawHtmlScheduleResponse(DateTime startDate, DateTime endDate, string groupName = null) {
+		private async Task<string> GetRawHtmlScheduleResponse(DateTime startDate, DateTime endDate, string groupName = null) {
 			groupName ??= options.DefaultGroupName;
 			
 			var content = new Dictionary<string, string> {
@@ -61,7 +60,7 @@ namespace NpuSchedule.Core.Services {
 				{ "edate", endDate.ToString("dd.MM.yyyy") },
 				{ "group", groupName },
 			};
-			var contentBytes = content.GetWindows1251EncodedContentByteArray();
+			var contentBytes = content.GetUrlEncodedContent().ToWindows1251();
 			HttpClient client = new HttpClient();
 			client.BaseAddress = new Uri(@"http://nmu.npu.edu.ua");
 			

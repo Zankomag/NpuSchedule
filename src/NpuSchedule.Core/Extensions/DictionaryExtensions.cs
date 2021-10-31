@@ -9,7 +9,7 @@ namespace NpuSchedule.Core.Extensions {
 
 	public static class DictionaryExtensions {
 
-		public static byte[] GetWindows1251EncodedContentByteArray(this Dictionary<string, string> valueByName) {
+		public static string GetUrlEncodedContent(this Dictionary<string, string> valueByName) {
 			if(valueByName == null) {
 				throw new ArgumentNullException(nameof(valueByName));
 			}
@@ -24,8 +24,7 @@ namespace NpuSchedule.Core.Extensions {
 				builder.Append('=');
 				builder.Append(pair.Value);
 			}
-			string result = builder.ToString();
-			return result.ToWindows1251();
+			return builder.ToString();
 		}
 
 	}

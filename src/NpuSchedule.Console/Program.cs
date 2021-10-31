@@ -28,8 +28,8 @@ var logger = host.Services.GetRequiredService<ILogger<object>>();
 logger.LogInformation("Requesting closest day schedule");
 
 var npuScheduleService = host.Services.GetRequiredService<INpuScheduleService>();
-var rawHtml = await npuScheduleService.GetRawHtmlScheduleResponse(DateTime.Now.AddDays(1), DateTime.Now.AddDays(2));
+//var rawHtml = await npuScheduleService.GetRawHtmlScheduleResponse(DateTime.Now.AddDays(1), DateTime.Now.AddDays(2));
 
-logger.LogInformation(rawHtml);
+//logger.LogInformation(rawHtml);
 
 Console.ReadLine();
