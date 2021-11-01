@@ -101,10 +101,10 @@ namespace NpuSchedule.Core.Services {
             var startTime = TimeSpan.Parse(timeClass.Split(" ")[0]);
             var endTime = TimeSpan.Parse(timeClass.Split(" ")[1]);
             
-            // check count classInfo in class
-            if (rawClass.InnerHtml.CountSubstring("class=\"link\"") < 2)
+            var countClassInfo = rawClass.InnerHtml.CountSubstring("class=\"link\"");
+            if (countClassInfo == 1)
                 firstClass = ParseClassInfo(rawClass.QuerySelector("td:nth-child(3)"));
-            else
+            else if (countClassInfo > 1)
             {
                 var classInfo = rawClass.QuerySelector("td:nth-child(3)");
                 string tmp = classInfo?.InnerHtml;
