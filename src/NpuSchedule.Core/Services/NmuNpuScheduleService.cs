@@ -68,9 +68,9 @@ namespace NpuSchedule.Core.Services {
             var context = BrowsingContext.New(config);
             var document = await context.OpenAsync(r => r.Content(rawHtml));
             var daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
-            var days = document?.QuerySelectorAll(daySelector);
+            var days = document.QuerySelectorAll(daySelector);
 
-            for (int i = 0; i < days?.Length; i++)
+            for (int i = 0; i < days.Length; i++)
                 result.Add(ParseDaySchedule(days[i]));
 
             return result;
@@ -101,7 +101,7 @@ namespace NpuSchedule.Core.Services {
             var startTime = TimeSpan.Parse(timeClass.Split(" ")[0]);
             var endTime = TimeSpan.Parse(timeClass.Split(" ")[1]);
             
-
+            // check count classInfo in class
             if (rawClass.InnerHtml.CountSubstring("class=\"link\"") < 2)
                 firstClass = ParseClassInfo(rawClass.QuerySelector("td:nth-child(3)"));
             else
@@ -115,12 +115,12 @@ namespace NpuSchedule.Core.Services {
                         
                     // remove second
                     if (startIndex != -1)
-                        classInfo.InnerHtml = classInfo.InnerHtml.Substring(0, startIndex + 7); // 7 = "</div> ".Length
+                        classInfo.InnerHtml = classInfo.InnerHtml[..(startIndex + 7)]; // 7 = "</div> ".Length
                     firstClass = ParseClassInfo(classInfo);
 
                     // remove first and adaptation second classInfo for parser
                     if (startIndex != -1)
-                        classInfo.InnerHtml = tmp.Substring(startIndex + 11).Replace("  <div", "<br> <div"); // 11 = "</div> ".Length + "<br>".Length
+                        classInfo.InnerHtml = tmp[(startIndex + 11)..].Replace("  <div", "<br> <div"); // 11 = "</div> ".Length + "<br>".Length
                     secondClass = ParseClassInfo(classInfo);
                 }
             }
@@ -137,8 +137,8 @@ namespace NpuSchedule.Core.Services {
             bool isRemote = false;
             if (classInfoObj.InnerHtml.Contains("class=\"remote_work\""))
             {
-                classInfoObj.InnerHtml = classInfoObj.InnerHtml.Substring(
-                    classInfoObj.InnerHtml.IndexOf("</span><br>", StringComparison.Ordinal) + 11); // 11 = "</span><br>".Length
+                classInfoObj.InnerHtml = classInfoObj.InnerHtml
+	                [(classInfoObj.InnerHtml.IndexOf("</span><br>", StringComparison.Ordinal) + 11)..]; // 11 = "</span><br>".Length
                 isRemote = true;
             }
 
