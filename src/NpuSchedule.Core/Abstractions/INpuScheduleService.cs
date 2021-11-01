@@ -13,9 +13,6 @@ namespace NpuSchedule.Core.Abstractions {
 
 		/// <param name="groupName">If groupName is null - default group name will be used</param>
 		Task<List<ScheduleDay>> GetWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, string groupName = null);
-
-		Task<List<ScheduleDay>> GetScheduleAsync(string rawHtmlCode);
-
 	}
 
 }

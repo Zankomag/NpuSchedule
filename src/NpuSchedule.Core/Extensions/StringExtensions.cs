@@ -21,6 +21,13 @@ namespace NpuSchedule.Core.Extensions {
 
 		public static string FromWindows1251(this byte[] bytes) => Windows1251Encoding.GetString(bytes);
 
+		public static int CountSubstring(this string value, string substring)
+		{
+			if (string.IsNullOrEmpty(substring))
+				return 0;
+			return (value.Length - value.Replace(substring, string.Empty).Length) / substring.Length;
+		}
+
 	}
 
 }

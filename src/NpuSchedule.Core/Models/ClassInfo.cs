@@ -7,5 +7,6 @@ namespace NpuSchedule.Core.Models
         public string Teacher { get; init; }
         public string Classroom { get; init; }
         public string OnlineMeetingUrl { get; init; }
+        public bool IsRemote { get; init; }
     }
 }
