@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
-using NpuSchedule.Core.Enums;
+using NpuSchedule.Common.Enums;
 using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Models;

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using NpuSchedule.Core.Enums;
+using NpuSchedule.Common.Enums;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 
