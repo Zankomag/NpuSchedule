@@ -22,6 +22,7 @@ namespace NpuSchedule.Core.Services {
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
+		private static readonly IBrowsingContext ParseContext = BrowsingContext.New();
 		private const string TempDivider = "*|*";
 
 		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger) {
@@ -61,17 +62,15 @@ namespace NpuSchedule.Core.Services {
 			return responseContentBytes.FromWindows1251();
 		}
 		
-		static async Task<List<ScheduleDay>> ParseRangeSchedule(string rawHtml)
+		static async Task<List<ScheduleDay>> ParseRangeSchedule(string rawHtml, int maxCount = int.MaxValue)
 		{
 			var result = new List<ScheduleDay>();
-			
-			var config = Configuration.Default.WithDefaultLoader();
-			var context = BrowsingContext.New(config);
-			var document = await context.OpenAsync(r => r.Content(rawHtml));
+			var document = await ParseContext.OpenAsync(r => r.Content(rawHtml));
 			var daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
 			var days = document.QuerySelectorAll(daySelector);
-
-			for (int i = 0; i < days.Length; i++)
+			var maxLength = Math.Min(days.Length, maxCount);
+			
+			for (int i = 0; i < maxLength; i++)
 				result.Add(ParseDaySchedule(days[i]));
 
 			return result;
@@ -80,7 +79,7 @@ namespace NpuSchedule.Core.Services {
 		static ScheduleDay ParseDaySchedule(IElement rawDay)
 		{
 			var rawDate = rawDay.QuerySelector("h4")?.TextContent.Split(" ")[0];
-			var date = DateTime.ParseExact(rawDate, "dd.MM.yyyy", CultureInfo.InvariantCulture);
+			var date = DateTimeOffset.ParseExact(rawDate, "dd.MM.yyyy", CultureInfo.InvariantCulture);
 			//TODO add check error parse
 			
 			var classes = new List<Class>();
@@ -162,15 +161,17 @@ namespace NpuSchedule.Core.Services {
 
 			var childIndex = classInfoObj.ChildNodes.Length switch
 			{
-				9 => // two string is data mixed group
+				9 => // second string is data mixed group
 					4,
-				7 or 5 => // two string is teacher and maybe has classroom
+				7 or 5 => // second string is teacher and maybe has classroom
 					2,
 				_ => -1
 			};
 
 			if (childIndex != -1)
 			{
+				if (childIndex == 4) discipline += $" ({classInfoObj.ChildNodes[2].TextContent.Trim()})";
+				
 				var rawTeacherAndClassroom = classInfoObj.ChildNodes[childIndex].TextContent;
 				if (rawTeacherAndClassroom.Contains(TempDivider))
 				{
