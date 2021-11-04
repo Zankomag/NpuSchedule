@@ -30,15 +30,12 @@ namespace NpuSchedule.Core.Services {
 		}
 
 		/// <inheritdoc />
-		public async Task<ScheduleDay> GetDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, string groupName = null)
-		{
-			throw new NotImplementedException();
-		}
-
-		/// <inheritdoc />
-		public async Task<List<ScheduleDay>> GetWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, string groupName = null)
-		{
-			throw new NotImplementedException();
+		public async Task<List<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
+			//TODO use DatetimeOffset instead of DateTime everywhere
+			//TODO Add exception logging
+			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
+			var schedules = await ParseRangeSchedule(rawHtml);
+			return schedules;
 		}
 
 		//TODO inject HttpClient
@@ -187,7 +184,7 @@ namespace NpuSchedule.Core.Services {
 				OnlineMeetingUrl = meetUrl, IsRemote = isRemote
 			};
 		}
-		
+
 	}
 
 }
