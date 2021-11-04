@@ -140,9 +140,31 @@ namespace NpuSchedule.Bot.Services {
 		/// <inheritdoc />
 		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId) => throw new NotImplementedException();
 
+		//TODO Move all message getters to Ui service
+		private string GetScheduleWeekMessage(List<ScheduleDay> scheduleDays, string groupName) {
+			//TODO get dates from utility method
+			DateTime startDate = default, endDate = default;
+			
+			string scheduleWeekDays;
+			if(scheduleDays == null || scheduleDays.Count == 0) {
+				scheduleWeekDays = options.NoClassesMessage;
+			} else {
+				StringBuilder scheduleDayClassesBuilder = new StringBuilder();
+				for(int i = 0; i < scheduleDays.Count; i++) {
+					var scheduleDay = scheduleDays[i];
+					scheduleDayClassesBuilder.AppendFormat(options.ScheduleDayMessageTemplate,
+						scheduleDay.Date,
+						GET_CLASSES);
+				}
+				scheduleWeekDays = scheduleDayClassesBuilder.ToString();
+			}
+			return String.Format(options.ScheduleWeekMessageTemplate, startDate, endDate, groupName, scheduleWeekDays);
+		}
+		
 		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, string groupName) {
 			
-			string scheduleDayClasses = null;
+			string scheduleDayClasses;
+			//TODO check for null instead of Any(), get date from utility method
 			if(!scheduleDay.Classes.Any()) {
 				scheduleDayClasses = options.NoClassesMessage;
 			} else {
