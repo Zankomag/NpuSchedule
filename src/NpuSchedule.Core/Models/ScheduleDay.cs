@@ -5,7 +5,7 @@ namespace NpuSchedule.Core.Models
 {
     public class ScheduleDay
     {
-		public DateTime Date { get; init; }
-        public List<Class> Classes { get; init; }
+		public DateTimeOffset Date { get; set; }
+        public List<Class> Classes { get; set; }
     }
 }

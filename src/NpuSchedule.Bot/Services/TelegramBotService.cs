@@ -161,6 +161,7 @@ namespace NpuSchedule.Bot.Services {
 			return String.Format(options.ScheduleWeekMessageTemplate, startDate, endDate, groupName, scheduleWeekDays);
 		}
 		
+//TODO Add exception logging for day and week
 		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, string groupName) {
 			
 			string scheduleDayClasses;
