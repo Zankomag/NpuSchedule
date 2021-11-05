@@ -1,4 +1,4 @@
-namespace NpuSchedule.Core.Enums
+namespace NpuSchedule.Common.Enums
 {
     public enum RelativeScheduleWeek {
         Current = 0,

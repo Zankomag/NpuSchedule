@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 using AngleSharp;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NpuSchedule.Common.Enums;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Configs;
-using NpuSchedule.Core.Enums;
 using NpuSchedule.Core.Extensions;
 using NpuSchedule.Core.Models;
 

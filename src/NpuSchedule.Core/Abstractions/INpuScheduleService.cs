@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NpuSchedule.Core.Enums;
+using NpuSchedule.Common.Enums;
 using NpuSchedule.Core.Models;
 
 namespace NpuSchedule.Core.Abstractions {

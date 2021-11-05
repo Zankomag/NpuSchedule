@@ -2,7 +2,7 @@
 
 namespace NpuSchedule.Core.Extensions {
 
-	public static class StringExtensions {
+	public static class EncodingExtensions {
 
 		private static Encoding windows1251Encoding;
 
