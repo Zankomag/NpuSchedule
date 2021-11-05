@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace NpuSchedule.Core.Extensions {
 
@@ -23,9 +24,9 @@ namespace NpuSchedule.Core.Extensions {
 
 		public static int CountSubstring(this string value, string substring)
 		{
-			if (string.IsNullOrEmpty(substring))
+			if (String.IsNullOrEmpty(substring))
 				return 0;
-			return (value.Length - value.Replace(substring, string.Empty).Length) / substring.Length;
+			return (value.Length - value.Replace(substring, String.Empty).Length) / substring.Length;
 		}
 
 	}

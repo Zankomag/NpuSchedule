@@ -23,7 +23,7 @@ namespace NpuSchedule.Core.Services {
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
 		private readonly IBrowsingContext parseContext = BrowsingContext.New();
-		private const string TempDivider = "*|*";
+		private const string tempDivider = "*|*";
 
 		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger) {
 			this.options = options.Value;
@@ -31,16 +31,21 @@ namespace NpuSchedule.Core.Services {
 		}
 
 		/// <inheritdoc />
-		public async Task<List<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
-			//TODO use DatetimeOffset instead of DateTime everywhere
+		public async Task<IList<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
 			//TODO Add exception logging
 			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
 			var schedules = await ParseRangeSchedule(rawHtml);
 			return schedules;
 		}
 
+		/// <inheritdoc />
+		public async Task<ScheduleDay> GetClosestScheduleDayAsync(int daysToSearch = 30, string groupName = null) {
+			throw new NotImplementedException();
+		}
+
 		//TODO inject HttpClient
-		private async Task<string> GetRawHtmlScheduleResponse(DateTime startDate, DateTime endDate, string groupName = null) {
+		//TODO refactor
+		private async Task<string> GetRawHtmlScheduleResponse(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
 			groupName ??= options.DefaultGroupName;
 			
 			var content = new Dictionary<string, string> {
@@ -59,11 +64,11 @@ namespace NpuSchedule.Core.Services {
 			return responseContentBytes.FromWindows1251();
 		}
 		
-		async Task<List<ScheduleDay>> ParseRangeSchedule(string rawHtml, int maxCount = int.MaxValue)
+		async Task<IList<ScheduleDay>> ParseRangeSchedule(string rawHtml, int maxCount = Int32.MaxValue)
 		{
+			const string daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
 			var result = new List<ScheduleDay>();
 			var document = await parseContext.OpenAsync(r => r.Content(rawHtml));
-			var daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
 			var days = document.QuerySelectorAll(daySelector);
 			var maxLength = Math.Min(days.Length, maxCount);
 			
@@ -113,8 +118,8 @@ namespace NpuSchedule.Core.Services {
 			}
 			
 			const int indexOfEndTime = 5;
-			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, TempDivider);
-			var rawStartAndEndTime = timeClass?.Split(TempDivider);
+			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, tempDivider);
+			var rawStartAndEndTime = timeClass?.Split(tempDivider);
 			TimeSpan startTime;
 			TimeSpan endTime;
 			
@@ -161,7 +166,7 @@ namespace NpuSchedule.Core.Services {
 		ClassInfo ParseClassInfo(IElement classInfoObj)
 		{
 			var meetUrl = classInfoObj.QuerySelector("div.link a")?.InnerHtml;
-			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", TempDivider + "ауд");
+			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", tempDivider + "ауд");
 
 			bool isRemote = false;
 			if (classInfoObj.InnerHtml.Contains("class=\"remote_work\""))
@@ -190,9 +195,9 @@ namespace NpuSchedule.Core.Services {
 				if (childIndex == 4) discipline += $" ({classInfoObj.ChildNodes[2].TextContent.Trim()})";
 				
 				var rawTeacherAndClassroom = classInfoObj.ChildNodes[childIndex].TextContent;
-				if (rawTeacherAndClassroom.Contains(TempDivider))
+				if (rawTeacherAndClassroom.Contains(tempDivider))
 				{
-					var teacherAndClassroom = rawTeacherAndClassroom.Split(TempDivider);
+					var teacherAndClassroom = rawTeacherAndClassroom.Split(tempDivider);
 					teacher = teacherAndClassroom[0].Trim();
 					classroom = teacherAndClassroom[1].Trim();
 				}

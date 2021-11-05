@@ -11,7 +11,14 @@ namespace NpuSchedule.Core.Abstractions {
 		/// <param name="endDate"></param>
 		/// <param name="groupName">If groupName is null - default group name will be used</param>
 		/// <param name="startDate"></param>
-		Task<List<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
+		Task<IList<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
+
+		/// <summary>
+		/// Searches for the closest schedule day within a 30 days by default
+		/// </summary>
+		Task<ScheduleDay> GetClosestScheduleDayAsync(int daysToSearch = 30, string groupName = null);
+		
+
 	}
 
 }
