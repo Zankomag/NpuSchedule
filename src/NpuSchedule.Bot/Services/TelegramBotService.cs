@@ -140,6 +140,7 @@ namespace NpuSchedule.Bot.Services {
 		/// <inheritdoc />
 		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId) => throw new NotImplementedException();
 
+//TODO Add exception logging for day and week
 		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, string groupName) {
 			
 			string scheduleDayClasses = null;
