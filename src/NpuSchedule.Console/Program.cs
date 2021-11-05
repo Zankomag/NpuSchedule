@@ -11,7 +11,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NpuSchedule.Common.Extensions;
 using NpuSchedule.Core.Abstractions;
-using NpuSchedule.Core.Enums;
 using NpuSchedule.Core.Extensions;
 
 Console.OutputEncoding = Encoding.UTF8;

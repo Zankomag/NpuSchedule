@@ -23,9 +23,41 @@ namespace NpuSchedule.Bot.Configs {
 			set => allowedChatIds = value.Concat(AdminIds).Distinct().ToArray();
 		}
 
-		//[Required]
-		//[FormatStringPlaceholderIndexesCount(5)]
-		//public string ScheduleDayMessageMessageTemplate { get; init; }
+		[Required]
+		[FormatStringPlaceholderIndexesCount(1)]
+		public string ScheduleClassInfoFieldTemplate { get; init; }
+		
+		[Required]
+		[FormatStringPlaceholderIndexesCount(4)]
+		public string ScheduleClassInfoMessageTemplate { get; init; }
+		
+		[Required]
+		[FormatStringPlaceholderIndexesCount(7)]
+		public string ScheduleClassMessageTemplate { get; init; }
+
+		[Required]
+		[FormatStringPlaceholderIndexesCount(3)]
+		public string SingleScheduleDayMessageTemplate { get; init; }
+		
+		[Required]
+		[FormatStringPlaceholderIndexesCount(2)]
+		public string ScheduleDayMessageTemplate { get; init; }
+		
+		[Required]
+		[FormatStringPlaceholderIndexesCount(4)]
+		public string ScheduleWeekMessageTemplate { get; init; }
+
+		[Required(AllowEmptyStrings = true)]
+		public string ScheduleClassSeparator { get; init; }
+
+		[Required(AllowEmptyStrings = true)]
+		public string ScheduleDaySeparator { get; init; }
+		
+		[Required(AllowEmptyStrings = true)]
+		public string ClassInfoSeparator { get; init; }
+		
+		[Required]
+		public string NoClassesMessage { get; init; }
 
 		public bool IsUserAdmin(long userId) => AdminIds.Contains(userId);
 		public bool IsChatAllowed(long chatId) => AllowedChatIds.Contains(chatId);
