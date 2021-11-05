@@ -20,7 +20,7 @@ namespace NpuSchedule.Core.Services {
 	/// </summary>
 	public class NmuNpuScheduleService : INpuScheduleService {
 		
-		private const string tempDivider = "*|*";
+		private const string ClassFieldSeparetor = "*|*";
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
@@ -133,8 +133,8 @@ namespace NpuSchedule.Core.Services {
 			}
 			
 			const int indexOfEndTime = 5;
-			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, tempDivider);
-			var rawStartAndEndTime = timeClass?.Split(tempDivider);
+			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, ClassFieldSeparetor);
+			var rawStartAndEndTime = timeClass?.Split(ClassFieldSeparetor);
 			TimeSpan startTime;
 			TimeSpan endTime;
 			
@@ -181,14 +181,17 @@ namespace NpuSchedule.Core.Services {
 		ClassInfo ParseClassInfo(IElement classInfoObj)
 		{
 			var meetUrl = classInfoObj.QuerySelector("div.link a")?.InnerHtml;
-			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", tempDivider + "ауд");
+			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", ClassFieldSeparetor + "ауд");
 
 			bool isRemote = false;
 			if (classInfoObj.InnerHtml.Contains("class=\"remote_work\""))
 			{
 				const string endSpanRemote = "</span><br>";
-				classInfoObj.InnerHtml = classInfoObj.InnerHtml
-					[(classInfoObj.InnerHtml.IndexOf(endSpanRemote, StringComparison.Ordinal) + endSpanRemote.Length)..];
+				var indexEndSpanRemote = classInfoObj.InnerHtml.IndexOf(endSpanRemote, StringComparison.Ordinal);
+				
+				if (indexEndSpanRemote != -1)
+					classInfoObj.InnerHtml = classInfoObj.InnerHtml[(indexEndSpanRemote + endSpanRemote.Length)..];
+					
 				isRemote = true;
 			}
 
@@ -210,9 +213,9 @@ namespace NpuSchedule.Core.Services {
 				if (childIndex == 4) discipline += $" ({classInfoObj.ChildNodes[2].TextContent.Trim()})";
 				
 				var rawTeacherAndClassroom = classInfoObj.ChildNodes[childIndex].TextContent;
-				if (rawTeacherAndClassroom.Contains(tempDivider))
+				if (rawTeacherAndClassroom.Contains(ClassFieldSeparetor))
 				{
-					var teacherAndClassroom = rawTeacherAndClassroom.Split(tempDivider);
+					var teacherAndClassroom = rawTeacherAndClassroom.Split(ClassFieldSeparetor);
 					teacher = teacherAndClassroom[0].Trim();
 					classroom = teacherAndClassroom[1].Trim();
 				}
