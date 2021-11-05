@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Globalization;
+using System.Linq;
 using AngleSharp;
 using AngleSharp.Dom;
 using Microsoft.Extensions.Logging;
@@ -22,7 +23,7 @@ namespace NpuSchedule.Core.Services {
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
-		private readonly IBrowsingContext parseContext = BrowsingContext.New();
+		private readonly IBrowsingContext parseContext = BrowsingContext.New(Configuration.Default.WithDefaultLoader());
 		private const string tempDivider = "*|*";
 
 		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger) {
@@ -31,17 +32,17 @@ namespace NpuSchedule.Core.Services {
 		}
 
 		/// <inheritdoc />
-		public async Task<IList<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
-			//TODO Add exception logging
+		public async Task<IAsyncEnumerable<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
 			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
-			var schedules = await ParseRangeSchedule(rawHtml);
-			return schedules;
+			return ParseRangeSchedule(rawHtml);
 		}
 
 		/// <inheritdoc />
-		public async Task<ScheduleDay> GetClosestScheduleDayAsync(int daysToSearch = 30, string groupName = null) {
-			throw new NotImplementedException();
+		public async Task<ScheduleDay> GetFirstScheduleDayAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
+			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
+			return await ParseRangeSchedule(rawHtml, 1).FirstOrDefaultAsync();
 		}
+
 
 		//TODO inject HttpClient
 		//TODO refactor
@@ -56,26 +57,37 @@ namespace NpuSchedule.Core.Services {
 			var contentBytes = content.GetUrlEncodedContent().ToWindows1251();
 			HttpClient client = new HttpClient();
 			client.BaseAddress = new Uri(@"http://nmu.npu.edu.ua");
-			
-			//n=700 should be as url parameter, otherwise it doesn't work
-			var response = await client.PostAsync(@"cgi-bin/timetable.cgi?n=700", new ByteArrayContent(contentBytes));
+			const string scheduleRequestUri = @"cgi-bin/timetable.cgi?n=700";
 
-			var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
-			return responseContentBytes.FromWindows1251();
+			string rawHtml = null;
+			
+			try {
+				//n=700 should be as url parameter, otherwise it doesn't work
+				var response = await client.PostAsync(scheduleRequestUri, new ByteArrayContent(contentBytes));
+
+				var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
+				rawHtml = responseContentBytes.FromWindows1251();
+			} catch(HttpRequestException ex) {
+				logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(client.BaseAddress!, scheduleRequestUri));
+				throw;
+			} catch(Exception ex) {
+				logger.LogError(ex, "Unhandled exception thrown while handling web response");
+			}
+			return rawHtml;
 		}
 		
-		async Task<IList<ScheduleDay>> ParseRangeSchedule(string rawHtml, int maxCount = Int32.MaxValue)
+		async IAsyncEnumerable<ScheduleDay> ParseRangeSchedule(string rawHtml, int maxCount = Int32.MaxValue)
 		{
+			if(String.IsNullOrWhiteSpace(rawHtml)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(rawHtml));
+
 			const string daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
-			var result = new List<ScheduleDay>();
 			var document = await parseContext.OpenAsync(r => r.Content(rawHtml));
 			var days = document.QuerySelectorAll(daySelector);
 			var maxLength = Math.Min(days.Length, maxCount);
 			
 			for (int i = 0; i < maxLength; i++)
-				result.Add(ParseDaySchedule(days[i]));
-
-			return result;
+				yield return ParseDaySchedule(days[i]);
+			
 		}
 		
 		ScheduleDay ParseDaySchedule(IElement rawDay)
