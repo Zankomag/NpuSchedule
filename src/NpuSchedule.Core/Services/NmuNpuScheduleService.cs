@@ -20,15 +20,17 @@ namespace NpuSchedule.Core.Services {
 	/// Gets schedule from NMU site
 	/// </summary>
 	public class NmuNpuScheduleService : INpuScheduleService {
+		
+		private const string tempDivider = "*|*";
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
-		private readonly IBrowsingContext parseContext = BrowsingContext.New(Configuration.Default.WithDefaultLoader());
-		private const string tempDivider = "*|*";
+		private readonly IBrowsingContext browsingContext;
 
-		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger) {
+		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger, IBrowsingContext browsingContext) {
 			this.options = options.Value;
 			this.logger = logger;
+			this.browsingContext = browsingContext;
 		}
 
 		/// <inheritdoc />
@@ -81,7 +83,7 @@ namespace NpuSchedule.Core.Services {
 			if(String.IsNullOrWhiteSpace(rawHtml)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(rawHtml));
 
 			const string daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
-			var document = await parseContext.OpenAsync(r => r.Content(rawHtml));
+			var document = await browsingContext.OpenAsync(r => r.Content(rawHtml));
 			var days = document.QuerySelectorAll(daySelector);
 			var maxLength = Math.Min(days.Length, maxCount);
 			

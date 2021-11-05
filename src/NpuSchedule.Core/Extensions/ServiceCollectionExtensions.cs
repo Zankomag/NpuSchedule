@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using AngleSharp;
 using Microsoft.Extensions.DependencyInjection;
 using NpuSchedule.Common.Extensions;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Configs;
 using NpuSchedule.Core.Services;
+using IConfiguration = Microsoft.Extensions.Configuration.IConfiguration;
 
 namespace NpuSchedule.Core.Extensions {
 
@@ -12,8 +13,11 @@ namespace NpuSchedule.Core.Extensions {
 		public static IServiceCollection AddNpuScheduleServiceServices(this IServiceCollection services, IConfiguration configuration) {
 			services.AddOptions<NpuScheduleOptions>(configuration, NpuScheduleOptions.SectionName);
 			services.AddSingleton<INpuScheduleService, NmuNpuScheduleService>();
+			services.AddAngleSharp();
 			return services;
 		}
+
+		public static IServiceCollection AddAngleSharp(this IServiceCollection services) => services.AddSingleton(BrowsingContext.New());
 
 	}
 
