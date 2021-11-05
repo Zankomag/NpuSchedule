@@ -22,7 +22,7 @@ namespace NpuSchedule.Core.Services {
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
-		private static readonly IBrowsingContext ParseContext = BrowsingContext.New();
+		private readonly IBrowsingContext parseContext = BrowsingContext.New();
 		private const string TempDivider = "*|*";
 
 		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger) {
@@ -62,10 +62,10 @@ namespace NpuSchedule.Core.Services {
 			return responseContentBytes.FromWindows1251();
 		}
 		
-		static async Task<List<ScheduleDay>> ParseRangeSchedule(string rawHtml, int maxCount = int.MaxValue)
+		async Task<List<ScheduleDay>> ParseRangeSchedule(string rawHtml, int maxCount = int.MaxValue)
 		{
 			var result = new List<ScheduleDay>();
-			var document = await ParseContext.OpenAsync(r => r.Content(rawHtml));
+			var document = await parseContext.OpenAsync(r => r.Content(rawHtml));
 			var daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
 			var days = document.QuerySelectorAll(daySelector);
 			var maxLength = Math.Min(days.Length, maxCount);
@@ -76,12 +76,20 @@ namespace NpuSchedule.Core.Services {
 			return result;
 		}
 		
-		static ScheduleDay ParseDaySchedule(IElement rawDay)
+		ScheduleDay ParseDaySchedule(IElement rawDay)
 		{
 			var rawDate = rawDay.QuerySelector("h4")?.TextContent.Split(" ")[0];
-			var date = DateTimeOffset.ParseExact(rawDate, "dd.MM.yyyy", CultureInfo.InvariantCulture);
-			//TODO add check error parse
-			
+			DateTimeOffset date;
+			try
+			{
+				date = DateTimeOffset.ParseExact(rawDate!, "dd.MM.yyyy", CultureInfo.InvariantCulture);
+			}
+			catch (Exception ex)
+			{
+				logger.LogError(ex, "Exception thrown when parsing date");
+				throw;
+			}
+
 			var classes = new List<Class>();
 			var rawClasses = rawDay.QuerySelectorAll("tr");
 
@@ -92,26 +100,38 @@ namespace NpuSchedule.Core.Services {
 			return new ScheduleDay { Date = date, Classes = classes };
 		}
 
-		static Class ParseClass(IElement rawClass)
+		Class ParseClass(IElement rawClass)
 		{
 			ClassInfo firstClass = null;
 			ClassInfo secondClass = null;
-			
-			if(!int.TryParse(rawClass.QuerySelector("td:nth-child(1)")?.TextContent, out var numberClass))
-				Console.WriteLine("Error get or parse number class"); //TODO replace console write to logger
+			int numberClass;
+			try
+			{
+				numberClass = int.Parse(rawClass.QuerySelector("td:nth-child(1)")?.TextContent!);
+			}
+			catch (Exception ex)
+			{
+				logger.LogError(ex, "Exception thrown when parsing numberClass");
+				throw;
+			}
 			
 			const int indexOfEndTime = 5;
 			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, TempDivider);
-			var rawTimeStartAndEnd = timeClass?.Split(TempDivider);
-			var startTime = TimeSpan.Zero;
-			var endTime = TimeSpan.Zero;
+			var rawStartAndEndTime = timeClass?.Split(TempDivider);
+			TimeSpan startTime;
+			TimeSpan endTime;
 			
-			if(rawTimeStartAndEnd?.Length < 1 || !TimeSpan.TryParse(rawTimeStartAndEnd?[0], out startTime))
-				Console.WriteLine("Error get or parse start time"); //TODO replace console write to logger
+			try
+			{
+				startTime = TimeSpan.Parse(rawStartAndEndTime![0]);
+				endTime = TimeSpan.Parse(rawStartAndEndTime![1]);
+			}
+			catch (Exception ex)
+			{
+				logger.LogError(ex, "Exception thrown when parsing StartAndEnd class time");
+				throw;
+			}
 			
-			if(rawTimeStartAndEnd?.Length < 2 || !TimeSpan.TryParse(rawTimeStartAndEnd?[1], out endTime))
-				Console.WriteLine("Error get or parse end time"); //TODO replace console write to logger
-
 			var countClassInfo = rawClass.InnerHtml.CountSubstring("class=\"link\"");
 			
 			if (countClassInfo == 1)
@@ -141,7 +161,7 @@ namespace NpuSchedule.Core.Services {
 			return new Class { StartTime = startTime, EndTime = endTime, Number = numberClass ,FirstClass = firstClass, SecondClass = secondClass};
 		}
 
-		static ClassInfo ParseClassInfo(IElement classInfoObj)
+		ClassInfo ParseClassInfo(IElement classInfoObj)
 		{
 			var meetUrl = classInfoObj.QuerySelector("div.link a")?.InnerHtml;
 			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", TempDivider + "ауд");
