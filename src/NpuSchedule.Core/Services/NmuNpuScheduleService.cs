@@ -8,7 +8,6 @@ using AngleSharp;
 using AngleSharp.Dom;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NpuSchedule.Common.Enums;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Configs;
 using NpuSchedule.Core.Extensions;
@@ -26,11 +25,14 @@ namespace NpuSchedule.Core.Services {
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
 		private readonly IBrowsingContext browsingContext;
+		private readonly IHttpClientFactory httpClientFactory;
 
-		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger, IBrowsingContext browsingContext) {
+		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger, 
+			IBrowsingContext browsingContext, IHttpClientFactory httpClientFactory) {
 			this.options = options.Value;
 			this.logger = logger;
 			this.browsingContext = browsingContext;
+			this.httpClientFactory = httpClientFactory;
 		}
 
 		/// <inheritdoc />
@@ -45,8 +47,7 @@ namespace NpuSchedule.Core.Services {
 			return await ParseRangeSchedule(rawHtml, 1).FirstOrDefaultAsync();
 		}
 
-
-		//TODO inject HttpClient
+		
 		//TODO refactor
 		private async Task<string> GetRawHtmlScheduleResponse(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
 			groupName ??= options.DefaultGroupName;
@@ -57,7 +58,7 @@ namespace NpuSchedule.Core.Services {
 				{ "group", groupName },
 			};
 			var contentBytes = content.GetUrlEncodedContent().ToWindows1251();
-			HttpClient client = new HttpClient();
+			HttpClient client = httpClientFactory.CreateClient();
 			client.BaseAddress = new Uri(@"http://nmu.npu.edu.ua");
 			const string scheduleRequestUri = @"cgi-bin/timetable.cgi?n=700";
 

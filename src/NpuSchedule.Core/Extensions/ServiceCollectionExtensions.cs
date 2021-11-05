@@ -13,6 +13,7 @@ namespace NpuSchedule.Core.Extensions {
 		public static IServiceCollection AddNpuScheduleServiceServices(this IServiceCollection services, IConfiguration configuration) {
 			services.AddOptions<NpuScheduleOptions>(configuration, NpuScheduleOptions.SectionName);
 			services.AddSingleton<INpuScheduleService, NmuNpuScheduleService>();
+			services.AddHttpClient<NmuNpuScheduleService>();
 			services.AddAngleSharp();
 			return services;
 		}
