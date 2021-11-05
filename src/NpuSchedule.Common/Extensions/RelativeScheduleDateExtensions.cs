@@ -10,6 +10,7 @@ namespace NpuSchedule.Common.Extensions {
 	public static class RelativeScheduleDateExtensions {
 
 		private const string timeZoneId = "FLE Standard Time";
+		private const int daysToSearchForClosestScheduleDay = 30;
 		
 		//TODO use DateTimeOffset in data structures
 		private static readonly TimeZoneInfo npuTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
@@ -34,7 +35,9 @@ namespace NpuSchedule.Common.Extensions {
 					=> (GetTomorrowDateTimeOffset(currentNpuDate), GetNextMondayDateTimeOffset(currentNpuDate)), //Range from Today to next Monday
 				(RelativeScheduleDay.Tomorrow, _) 
 					=> GetSingleDateTimeOffsetRange(GetTomorrowDateTimeOffset(currentNpuDate)), //Range from Tomorrow to Tomorrow
-				(RelativeScheduleDay.Closest or _, _) => throw new InvalidEnumArgumentException(nameof(scheduleDay), (int)scheduleDay, typeof(RelativeScheduleDay))
+				(RelativeScheduleDay.Closest, _) 
+					=> (currentNpuDate, AddDaysToDateTimeOffset(currentNpuDate, daysToSearchForClosestScheduleDay)), //Range from Today to Today+daysToSearchForClosestScheduleDay
+				( _, _) => throw new InvalidEnumArgumentException(nameof(scheduleDay), (int)scheduleDay, typeof(RelativeScheduleDay))
 			};
 		}
 		
