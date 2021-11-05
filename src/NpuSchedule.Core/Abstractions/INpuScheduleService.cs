@@ -1,20 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using NpuSchedule.Common.Enums;
 using NpuSchedule.Core.Models;
 
 namespace NpuSchedule.Core.Abstractions {
 
 	public interface INpuScheduleService
 	{
-		/// <param name="groupName">If groupName is null - default group name will be used</param>
-		Task<ScheduleDay> GetDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, string groupName = null);
 
+		/// <param name="endDate"></param>
 		/// <param name="groupName">If groupName is null - default group name will be used</param>
-		Task<List<ScheduleDay>> GetWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, string groupName = null);
+		/// <param name="startDate"></param>
+		Task<IAsyncEnumerable<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
 
-		Task<List<ScheduleDay>> GetScheduleAsync(string rawHtmlCode);
+		/// <summary>
+		/// Searches for the first occurrence of schedule day within date range. If nothing found - returns null
+		/// </summary>
+		Task<ScheduleDay> GetFirstScheduleDayAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
+		
 
 	}
 

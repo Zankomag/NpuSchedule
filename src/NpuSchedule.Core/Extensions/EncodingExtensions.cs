@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace NpuSchedule.Core.Extensions {
 
@@ -20,6 +21,13 @@ namespace NpuSchedule.Core.Extensions {
 		public static byte[] ToWindows1251(this string @string) => Windows1251Encoding.GetBytes(@string);
 
 		public static string FromWindows1251(this byte[] bytes) => Windows1251Encoding.GetString(bytes);
+
+		public static int CountSubstring(this string value, string substring)
+		{
+			if (String.IsNullOrEmpty(substring))
+				return 0;
+			return (value.Length - value.Replace(substring, String.Empty).Length) / substring.Length;
+		}
 
 	}
 
