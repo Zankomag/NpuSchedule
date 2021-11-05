@@ -20,7 +20,7 @@ namespace NpuSchedule.Core.Services {
 	/// </summary>
 	public class NmuNpuScheduleService : INpuScheduleService {
 		
-		private const string ClassFieldSeparetor = "*|*";
+		private const string ClassFieldSeparator = "*|*";
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
@@ -133,8 +133,8 @@ namespace NpuSchedule.Core.Services {
 			}
 			
 			const int indexOfEndTime = 5;
-			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, ClassFieldSeparetor);
-			var rawStartAndEndTime = timeClass?.Split(ClassFieldSeparetor);
+			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, ClassFieldSeparator);
+			var rawStartAndEndTime = timeClass?.Split(ClassFieldSeparator);
 			TimeSpan startTime;
 			TimeSpan endTime;
 			
@@ -181,7 +181,7 @@ namespace NpuSchedule.Core.Services {
 		ClassInfo ParseClassInfo(IElement classInfoObj)
 		{
 			var meetUrl = classInfoObj.QuerySelector("div.link a")?.InnerHtml;
-			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", ClassFieldSeparetor + "ауд");
+			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", ClassFieldSeparator + "ауд");
 
 			bool isRemote = false;
 			if (classInfoObj.InnerHtml.Contains("class=\"remote_work\""))
@@ -213,9 +213,9 @@ namespace NpuSchedule.Core.Services {
 				if (childIndex == 4) discipline += $" ({classInfoObj.ChildNodes[2].TextContent.Trim()})";
 				
 				var rawTeacherAndClassroom = classInfoObj.ChildNodes[childIndex].TextContent;
-				if (rawTeacherAndClassroom.Contains(ClassFieldSeparetor))
+				if (rawTeacherAndClassroom.Contains(ClassFieldSeparator))
 				{
-					var teacherAndClassroom = rawTeacherAndClassroom.Split(ClassFieldSeparetor);
+					var teacherAndClassroom = rawTeacherAndClassroom.Split(ClassFieldSeparator);
 					teacher = teacherAndClassroom[0].Trim();
 					classroom = teacherAndClassroom[1].Trim();
 				}
