@@ -45,7 +45,7 @@ namespace NpuSchedule.Common.Extensions {
 		public static (DateTimeOffset StartDateTimeOffset, DateTimeOffset EndDateTimeOffset) GetScheduleWeekDateTimeOffsetRange(this RelativeScheduleWeek scheduleWeek) {
 			var currentNpuDate = GetCurrentDateTimeOffset();
 			DateTimeOffset mondayDate = scheduleWeek switch {
-				RelativeScheduleWeek.Current => GetNextMondayDateTimeOffset(currentNpuDate),
+				RelativeScheduleWeek.Current => GetCurrentMondayDateTimeOffset(currentNpuDate),
 				RelativeScheduleWeek.Next => AddDaysToDateTimeOffset(currentNpuDate, GetDaysToNextMonday(currentNpuDate.DayOfWeek)),
 				_ => throw new InvalidEnumArgumentException(nameof(scheduleWeek), (int)scheduleWeek, typeof(RelativeScheduleWeek))
 			};
@@ -60,6 +60,9 @@ namespace NpuSchedule.Common.Extensions {
 		 => (mondayDateTimeOffset, AddDaysToDateTimeOffset(mondayDateTimeOffset, 7d));
 
 		private static DateTimeOffset GetNextMondayDateTimeOffset(DateTimeOffset currentDate)
+			=> AddDaysToDateTimeOffset(currentDate, GetDaysToNextMonday(currentDate.DayOfWeek));
+
+		private static DateTimeOffset GetCurrentMondayDateTimeOffset(DateTimeOffset currentDate)
 			=> AddDaysToDateTimeOffset(currentDate, GetDaysToCurrentMonday(currentDate.DayOfWeek));
 
 		private static DateTimeOffset GetTomorrowDateTimeOffset(DateTimeOffset currentDate) => AddDaysToDateTimeOffset(currentDate, 1d);
