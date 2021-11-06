@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
 using NpuSchedule.Common.Enums;
+using NpuSchedule.Common.Extensions;
 using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Models;
@@ -59,6 +60,7 @@ namespace NpuSchedule.Bot.Services {
 			
 			string command = atIndex == -1 ? message.Text : message.Text[..atIndex];
 
+			//TODO refactor allowed chat:)
 			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
 			switch(command.ToLower()) {
 				case "/today":
@@ -125,25 +127,29 @@ namespace NpuSchedule.Bot.Services {
 		public async Task SendDayScheduleAsync(DateTime date, long chatId) => throw new NotImplementedException();
 
 		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId) {
+		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
 			
 			try {
-
-
-				string message = GetSingleScheduleDayMessage(scheduleDay, "42ИПЗ");
+				string message;
+				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
+				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
+				if(schedule.ScheduleDays.Count == 1) {
+					message = GetSingleScheduleDayMessage(schedule.ScheduleDays[0], schedule.ScheduleDays[0].Date, groupName);
+				} else {
+					message = GetScheduleWeekMessage(schedule.ScheduleDays, startDate, endDate, groupName);
+				}
 				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
 			} catch(Exception ex) {
-				logger.LogError(ex, "Received exception");
+				logger.LogError(ex, "Received exception while sending schedule message");
 			}
 		}
 
 		/// <inheritdoc />
-		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId) => throw new NotImplementedException();
+		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) => throw new NotImplementedException();
 
 		//TODO Move all message getters to Ui service
-		private string GetScheduleWeekMessage(List<ScheduleDay> scheduleDays, string groupName) {
-			//TODO get dates from utility method
-			DateTime startDate = default, endDate = default;
+		//TODO add groupName to new shedule type
+		private string GetScheduleWeekMessage(IList<ScheduleDay> scheduleDays, DateTimeOffset startDate, DateTimeOffset endDate, string groupName) {
 			
 			string scheduleWeekDays;
 			if(scheduleDays == null || scheduleDays.Count == 0) {
@@ -162,11 +168,10 @@ namespace NpuSchedule.Bot.Services {
 		}
 		
 //TODO Add exception logging for day and week
-		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, string groupName) {
+		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, DateTimeOffset date,  string groupName) {
 			
 			string scheduleDayClasses;
-			//TODO check for null instead of Any(), get date from utility method
-			if(!scheduleDay.Classes.Any()) {
+			if(scheduleDay?.Classes?.Any() != true) {
 				scheduleDayClasses = options.NoClassesMessage;
 			} else {
 				StringBuilder scheduleDayClassesBuilder = new StringBuilder();
@@ -183,7 +188,7 @@ namespace NpuSchedule.Bot.Services {
 				}
 				scheduleDayClasses = scheduleDayClassesBuilder.ToString();
 			}
-			return String.Format(options.SingleScheduleDayMessageTemplate, scheduleDay.Date, groupName, scheduleDayClasses);
+			return String.Format(options.SingleScheduleDayMessageTemplate, date, groupName, scheduleDayClasses);
 		}
 
 		private string GetClassInfoMessage(ClassInfo classInfo)
@@ -196,41 +201,41 @@ namespace NpuSchedule.Bot.Services {
 		private string GetClassInfoField(string classInfoField)
 			=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
 
-		//TODO delete this
-		private ScheduleDay scheduleDay = new ScheduleDay() {
-			Date = DateTime.Now,
-			Classes = new List<Class> {
-				new Class() {
-					StartTime = new TimeSpan(12, 30, 0),
-					EndTime = new TimeSpan(14, 50, 0),
-					Number = 1,
-					FirstClass = new ClassInfo() {
-						Classroom = "urban central",
-						DisciplineName = "math",
-						OnlineMeetingUrl = null,
-						Teacher = "Savina"
-					},
-					SecondClass = null
-				},
-				new Class() {
-					StartTime = new TimeSpan(16, 0, 0),
-					EndTime = new TimeSpan(17, 20, 0),
-					Number = 3,
-					FirstClass = new ClassInfo() {
-						Classroom = null,
-						DisciplineName = "ukr",
-						OnlineMeetingUrl = "https://meet.com",
-						Teacher = "Savina"
-					},
-					SecondClass = new ClassInfo() {
-						Classroom = "urban central",
-						DisciplineName = "math",
-						OnlineMeetingUrl = null,
-						Teacher = "Savina"
-					}
-				}
-			}
-		};
+		// //TODO delete this
+		// private ScheduleDay scheduleDay = new ScheduleDay() {
+		// 	Date = DateTime.Now,
+		// 	Classes = new List<Class> {
+		// 		new Class() {
+		// 			StartTime = new TimeSpan(12, 30, 0),
+		// 			EndTime = new TimeSpan(14, 50, 0),
+		// 			Number = 1,
+		// 			FirstClass = new ClassInfo() {
+		// 				Classroom = "urban central",
+		// 				DisciplineName = "math",
+		// 				OnlineMeetingUrl = null,
+		// 				Teacher = "Savina"
+		// 			},
+		// 			SecondClass = null
+		// 		},
+		// 		new Class() {
+		// 			StartTime = new TimeSpan(16, 0, 0),
+		// 			EndTime = new TimeSpan(17, 20, 0),
+		// 			Number = 3,
+		// 			FirstClass = new ClassInfo() {
+		// 				Classroom = null,
+		// 				DisciplineName = "ukr",
+		// 				OnlineMeetingUrl = "https://meet.com",
+		// 				Teacher = "Savina"
+		// 			},
+		// 			SecondClass = new ClassInfo() {
+		// 				Classroom = "urban central",
+		// 				DisciplineName = "math",
+		// 				OnlineMeetingUrl = null,
+		// 				Teacher = "Savina"
+		// 			}
+		// 		}
+		// 	}
+		// };
 
 		
 	}
