@@ -12,7 +12,6 @@ namespace NpuSchedule.Common.Extensions {
 		private const string timeZoneId = "FLE Standard Time";
 		private const int daysToSearchForClosestScheduleDay = 30;
 		
-		//TODO use DateTimeOffset in data structures
 		private static readonly TimeZoneInfo npuTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 
 		private static DateTimeOffset GetCurrentDateTimeOffset() 

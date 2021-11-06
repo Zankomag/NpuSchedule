@@ -153,7 +153,6 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		//TODO Move all message getters to Ui service
-		//TODO add groupName to new shedule type
 		private string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
 			
 			string scheduleWeekDays;
@@ -209,43 +208,6 @@ namespace NpuSchedule.Bot.Services {
 		private string GetClassInfoField(string classInfoField)
 			=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
 
-		// //TODO delete this
-		// private ScheduleDay scheduleDay = new ScheduleDay() {
-		// 	Date = DateTime.Now,
-		// 	Classes = new List<Class> {
-		// 		new Class() {
-		// 			StartTime = new TimeSpan(12, 30, 0),
-		// 			EndTime = new TimeSpan(14, 50, 0),
-		// 			Number = 1,
-		// 			FirstClass = new ClassInfo() {
-		// 				Classroom = "urban central",
-		// 				DisciplineName = "math",
-		// 				OnlineMeetingUrl = null,
-		// 				Teacher = "Savina"
-		// 			},
-		// 			SecondClass = null
-		// 		},
-		// 		new Class() {
-		// 			StartTime = new TimeSpan(16, 0, 0),
-		// 			EndTime = new TimeSpan(17, 20, 0),
-		// 			Number = 3,
-		// 			FirstClass = new ClassInfo() {
-		// 				Classroom = null,
-		// 				DisciplineName = "ukr",
-		// 				OnlineMeetingUrl = "https://meet.com",
-		// 				Teacher = "Savina"
-		// 			},
-		// 			SecondClass = new ClassInfo() {
-		// 				Classroom = "urban central",
-		// 				DisciplineName = "math",
-		// 				OnlineMeetingUrl = null,
-		// 				Teacher = "Savina"
-		// 			}
-		// 		}
-		// 	}
-		// };
-
-		
 	}
 
 }
