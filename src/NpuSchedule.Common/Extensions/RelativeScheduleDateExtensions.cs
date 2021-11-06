@@ -54,7 +54,7 @@ namespace NpuSchedule.Common.Extensions {
 
 		private static double GetDaysToCurrentMonday(DayOfWeek currentDayOfWeek) => -1d * ((7 + (currentDayOfWeek - DayOfWeek.Monday)) % 7);
 
-		private static double GetDaysToNextMonday(DayOfWeek currentDayOfWeek) => GetDaysToCurrentMonday(currentDayOfWeek) + 7d;
+		private static double GetDaysToNextMonday(DayOfWeek currentDayOfWeek) => GetDaysToCurrentMonday(currentDayOfWeek) + 6d;
 		
 		private static (DateTimeOffset StartDateTimeOffset, DateTimeOffset EndDateTimeOffset) GetWeekDateTimeOffsetRange(DateTimeOffset mondayDateTimeOffset)
 		 => (mondayDateTimeOffset, AddDaysToDateTimeOffset(mondayDateTimeOffset, 7d));
