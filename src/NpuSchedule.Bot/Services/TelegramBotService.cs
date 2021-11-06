@@ -164,7 +164,8 @@ namespace NpuSchedule.Bot.Services {
 				foreach(ScheduleDay scheduleDay in scheduleDays) {
 					scheduleDayClassesBuilder.AppendFormat(options.ScheduleDayMessageTemplate,
 						scheduleDay.Date,
-						GetScheduleDayClassesMessage(scheduleDay));
+						GetScheduleDayClassesMessage(scheduleDay),
+						options.ScheduleDaySeparator);
 				}
 				scheduleWeekDays = scheduleDayClassesBuilder.ToString();
 			}

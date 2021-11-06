@@ -40,7 +40,7 @@ namespace NpuSchedule.Bot.Configs {
 		public string SingleScheduleDayMessageTemplate { get; init; }
 		
 		[Required]
-		[FormatStringPlaceholderIndexesCount(2)]
+		[FormatStringPlaceholderIndexesCount(3)]
 		public string ScheduleDayMessageTemplate { get; init; }
 		
 		[Required]
