@@ -128,7 +128,6 @@ namespace NpuSchedule.Bot.Services {
 
 		/// <inheritdoc />
 		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
-			
 			try {
 				string message;
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
@@ -140,34 +139,42 @@ namespace NpuSchedule.Bot.Services {
 				}
 				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
 			} catch(Exception ex) {
-				logger.LogError(ex, "Received exception while sending schedule message");
+				logger.LogError(ex, "Received exception while sending day schedule message");
 			}
 		}
 
 		/// <inheritdoc />
-		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) => throw new NotImplementedException();
+		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+			try {
+				string message;
+				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
+				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
+				message = GetScheduleWeekMessage(schedule.ScheduleDays, startDate, endDate, groupName);
+				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
+			} catch(Exception ex) {
+				logger.LogError(ex, "Received exception while sending single schedule message");
+			}
+		}
 
 		//TODO Move all message getters to Ui service
 		//TODO add groupName to new shedule type
-		private string GetScheduleWeekMessage(IList<ScheduleDay> scheduleDays, DateTimeOffset startDate, DateTimeOffset endDate, string groupName) {
+		private string GetScheduleWeekMessage(ICollection<ScheduleDay> scheduleDays, DateTimeOffset startDate, DateTimeOffset endDate, string groupName) {
 			
 			string scheduleWeekDays;
 			if(scheduleDays == null || scheduleDays.Count == 0) {
 				scheduleWeekDays = options.NoClassesMessage;
 			} else {
 				StringBuilder scheduleDayClassesBuilder = new StringBuilder();
-				for(int i = 0; i < scheduleDays.Count; i++) {
-					var scheduleDay = scheduleDays[i];
+				foreach(ScheduleDay scheduleDay in scheduleDays) {
 					scheduleDayClassesBuilder.AppendFormat(options.ScheduleDayMessageTemplate,
 						scheduleDay.Date,
-						GET_CLASSES);
+						GetScheduleDayClassesMessage(scheduleDay));
 				}
 				scheduleWeekDays = scheduleDayClassesBuilder.ToString();
 			}
 			return String.Format(options.ScheduleWeekMessageTemplate, startDate, endDate, groupName, scheduleWeekDays);
 		}
 		
-//TODO Add exception logging for day and week
 		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, DateTimeOffset date,  string groupName) {
 			
 			string scheduleDayClasses;
