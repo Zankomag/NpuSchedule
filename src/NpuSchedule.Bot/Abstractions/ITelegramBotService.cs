@@ -1,18 +1,23 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using NpuSchedule.Common.Enums;
+using Telegram.Bot.Extensions.Polling;
+using Telegram.Bot.Types;
 
 namespace NpuSchedule.Bot.Abstractions {
-
-	//TODO add unit and integration tests
+	
 	public interface ITelegramBotService : IUpdateHandler {
-
-		Task<Message> SendCurrencyRateAsync(long chatId, Exchangerate currencyRate, string baseCurrencyChar, string quoteCurrencyChar);
-		Task<Message> SendCurrencyRateAsync(long chatId, string currencyBase, string currencyQuote);
 
 		Task HandleMessageAsync(Message message);
 
 		Task HandleInlineQueryAsync(InlineQuery inlineQuery);
 
 		Task HandleUpdateAsync(Update update);
+
+		bool IsTokenCorrect(string token);
+		
+		Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null);
+		Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null);
 
 	}
 

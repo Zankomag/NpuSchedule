@@ -1,15 +1,23 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NpuSchedule.Bot.Services;
+using NpuSchedule.Common.Extensions;
+using NpuSchedule.Common.Utils;
 
 namespace NpuSchedule.Bot {
 
 	public class LocalEntryPoint {
 
 		private static async Task Main() {
-			var host = GetHost();
-			//var host = GetWebHost();
-			
+			IHost host;
+			if(EnvironmentWrapper.IsDevelopment) {
+				host = GetHost();
+			} else {
+				host = GetWebHost();
+			}
+
 			await host.RunAsync();
 		}
 

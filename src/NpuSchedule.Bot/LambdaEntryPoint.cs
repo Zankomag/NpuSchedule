@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Amazon.Lambda.AspNetCoreServer;
+using Microsoft.AspNetCore.Hosting;
 
 namespace NpuSchedule.Bot {
 

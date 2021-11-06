@@ -1,9 +1,11 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
+using Telegram.Bot;
 
 namespace NpuSchedule.Bot.Services {
 
@@ -14,20 +16,22 @@ namespace NpuSchedule.Bot.Services {
 	public class TelegramBotLocalRunner : IHostedService {
 
 		private readonly ITelegramBotService telegramBotService;
+		private readonly ILogger<TelegramBotLocalRunner> logger;
 		private readonly ITelegramBotClient client;
 
 		private CancellationTokenSource cancellationTokenSource;
 		private Task pollingTask;
 
-		public TelegramBotLocalRunner(IOptions<TelegramBotOptions> telegramBotOptions, ITelegramBotService telegramBotService) {
+		public TelegramBotLocalRunner(IOptions<TelegramBotOptions> telegramBotOptions, ITelegramBotService telegramBotService, ILogger<TelegramBotLocalRunner> logger) {
 			this.telegramBotService = telegramBotService;
+			this.logger = logger;
 			TelegramBotOptions options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
 		}
 
 		/// <inheritdoc />
 		public Task StartAsync(CancellationToken cancellationToken) {
-			//TODO Log ("Starting telegram polling...");
+			logger.LogInformation("Starting telegram polling...");
 			cancellationTokenSource = new CancellationTokenSource();
 			pollingTask = Task.Run(() => client.ReceiveAsync(telegramBotService, cancellationTokenSource.Token), cancellationToken);
 			return Task.CompletedTask;
@@ -35,7 +39,7 @@ namespace NpuSchedule.Bot.Services {
 
 		/// <inheritdoc />
 		public async Task StopAsync(CancellationToken cancellationToken) {
-			//TODO Log ("Stopping telegram polling...");
+			logger.LogInformation("Stopping telegram polling...");
 			cancellationTokenSource.Cancel();
 			await pollingTask;
 		}
