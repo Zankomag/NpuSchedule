@@ -124,9 +124,6 @@ namespace NpuSchedule.Bot.Services {
 		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
 
 		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(DateTime date, long chatId) => throw new NotImplementedException();
-
-		/// <inheritdoc />
 		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
 			try {
 				string message;
@@ -146,10 +143,9 @@ namespace NpuSchedule.Bot.Services {
 		/// <inheritdoc />
 		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
 			try {
-				string message;
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
 				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
-				message = GetScheduleWeekMessage(schedule.ScheduleDays, startDate, endDate, groupName);
+				string message = GetScheduleWeekMessage(schedule.ScheduleDays, startDate, endDate, groupName);
 				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
 			} catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending single schedule message");
