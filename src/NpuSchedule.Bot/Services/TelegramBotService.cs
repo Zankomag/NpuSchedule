@@ -134,7 +134,7 @@ namespace NpuSchedule.Bot.Services {
 				} else {
 					message = GetScheduleWeekMessage(schedule.ScheduleDays, startDate, endDate, groupName);
 				}
-				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
+				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending day schedule message");
 			}
@@ -146,7 +146,7 @@ namespace NpuSchedule.Bot.Services {
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
 				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
 				string message = GetScheduleWeekMessage(schedule.ScheduleDays, startDate, endDate, groupName);
-				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown);
+				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending single schedule message");
 			}
