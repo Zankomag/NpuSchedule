@@ -36,7 +36,7 @@ namespace NpuSchedule.Common.Extensions {
 				(RelativeScheduleDay.Tomorrow, _) 
 					=> GetSingleDateTimeOffsetRange(GetTomorrowDateTimeOffset(currentNpuDate)), //Range from Tomorrow to Tomorrow
 				(RelativeScheduleDay.Closest, _) 
-					=> (currentNpuDate, AddDaysToDateTimeOffset(currentNpuDate, daysToSearchForClosestScheduleDay)), //Range from Today to Today+daysToSearchForClosestScheduleDay
+					=> (currentNpuDate.Hour < 16 ? currentNpuDate : AddDaysToDateTimeOffset(currentNpuDate, 1), AddDaysToDateTimeOffset(currentNpuDate, daysToSearchForClosestScheduleDay)), //Range from Today to Today+daysToSearchForClosestScheduleDay
 				( _, _) => throw new InvalidEnumArgumentException(nameof(scheduleDay), (int)scheduleDay, typeof(RelativeScheduleDay))
 			};
 		}
