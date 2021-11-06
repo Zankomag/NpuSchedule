@@ -67,7 +67,7 @@ namespace NpuSchedule.Core.Services {
 				var response = await client.PostAsync(scheduleRequestUri, new ByteArrayContent(contentBytes));
 				if(response.IsSuccessStatusCode) {
 					var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
-					rawHtml = responseContentBytes.FromWindows1251();
+					rawHtml = responseContentBytes.FromWindows1251().Replace("windows-1251", "utf-8");
 				} else {
 					throw new HttpRequestException($"Response status code is: {response.StatusCode} but must be 2**");
 				}
