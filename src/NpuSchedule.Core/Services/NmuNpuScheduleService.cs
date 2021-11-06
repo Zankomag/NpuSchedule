@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Globalization;
-using System.Linq;
 using AngleSharp;
 using AngleSharp.Dom;
 using Microsoft.Extensions.Logging;
@@ -36,23 +35,21 @@ namespace NpuSchedule.Core.Services {
 		}
 
 		/// <inheritdoc />
-		public async Task<IList<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
+		public async Task<Schedule> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null, int maxScheduleDaysCount = Int32.MaxValue) {
+			groupName ??= options.DefaultGroupName;
+			if(String.IsNullOrWhiteSpace(groupName)) throw new ArgumentException("Parameter must not be null or whitespace", nameof(groupName));
 			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
-			return await ParseRangeSchedule(rawHtml);
+			var scheduleDays = await ParseRangeSchedule(rawHtml, maxScheduleDaysCount);
+			
+			return new Schedule {
+				GroupName = groupName,
+				ScheduleDays = scheduleDays
+			};
 		}
 
-		/// <inheritdoc />
-		public async Task<ScheduleDay> GetFirstScheduleDayAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
-			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
-			var scheduleDays = await ParseRangeSchedule(rawHtml, 1);
-			return scheduleDays.FirstOrDefault();
-		}
 
-		
 		//TODO refactor
 		private async Task<string> GetRawHtmlScheduleResponse(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
-			groupName ??= options.DefaultGroupName;
-			
 			var content = new Dictionary<string, string> {
 				{ "sdate", startDate.ToString("dd.MM.yyyy") },
 				{ "edate", endDate.ToString("dd.MM.yyyy") },

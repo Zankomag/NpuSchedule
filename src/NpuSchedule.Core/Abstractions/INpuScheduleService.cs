@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using NpuSchedule.Core.Models;
 
@@ -11,13 +10,8 @@ namespace NpuSchedule.Core.Abstractions {
 		/// <param name="endDate"></param>
 		/// <param name="groupName">If groupName is null - default group name will be used</param>
 		/// <param name="startDate"></param>
-		Task<IList<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
-
-		/// <summary>
-		/// Searches for the first occurrence of schedule day within date range. If nothing found - returns null
-		/// </summary>
-		Task<ScheduleDay> GetFirstScheduleDayAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
-		
+		/// <param name="maxScheduleDaysCount">The maximum quantity of schedule days to retrieve</param>
+		Task<Schedule> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null, int maxScheduleDaysCount = Int32.MaxValue);
 
 	}
 
