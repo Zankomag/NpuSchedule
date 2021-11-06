@@ -33,7 +33,7 @@ namespace NpuSchedule.Bot {
 				.AddConfiguration()
 				.ConfigureWebHost(x =>
 					x.UseKestrel()
-						.UseUrls("https://*:5930")
+						.UseUrls("https://*:5930") //TODO fix ssl on linux and use address from Kestrel configuration
 						.UseStartup<Startup>())
 				.Build();
 
