@@ -174,23 +174,27 @@ namespace NpuSchedule.Bot.Services {
 			if(scheduleDay?.Classes?.Any() != true) {
 				scheduleDayClasses = options.NoClassesMessage;
 			} else {
-				StringBuilder scheduleDayClassesBuilder = new StringBuilder();
-				for(int i = 0; i < scheduleDay.Classes.Count; i++) {
-					var item = scheduleDay.Classes[i];
-					scheduleDayClassesBuilder.AppendFormat(options.ScheduleClassMessageTemplate,
-						item.Number,
-						item.StartTime,
-						item.EndTime,
-						GetClassInfoMessage(item.FirstClass),
-						item.SecondClass != null ? options.ClassInfoSeparator : null,
-						item.SecondClass != null ? GetClassInfoMessage(item.SecondClass) : null,
-						i < scheduleDay.Classes.Count - 1 ? options.ScheduleClassSeparator : null); 
-				}
-				scheduleDayClasses = scheduleDayClassesBuilder.ToString();
+				scheduleDayClasses = GetScheduleDayClassesMessage(scheduleDay);
 			}
 			return String.Format(options.SingleScheduleDayMessageTemplate, date, groupName, scheduleDayClasses);
 		}
 
+		private string GetScheduleDayClassesMessage(ScheduleDay scheduleDay) {
+			StringBuilder scheduleDayClassesBuilder = new StringBuilder();
+			for(int i = 0; i < scheduleDay.Classes.Count; i++) {
+				var @class = scheduleDay.Classes[i];
+				scheduleDayClassesBuilder.AppendFormat(options.ScheduleClassMessageTemplate,
+					@class.Number,
+					@class.StartTime,
+					@class.EndTime,
+					GetClassInfoMessage(@class.FirstClass),
+					@class.SecondClass != null ? options.ClassInfoSeparator : null,
+					@class.SecondClass != null ? GetClassInfoMessage(@class.SecondClass) : null,
+					i < scheduleDay.Classes.Count - 1 ? options.ScheduleClassSeparator : null);
+			}
+			return scheduleDayClassesBuilder.ToString();
+		}
+		
 		private string GetClassInfoMessage(ClassInfo classInfo)
 			=> String.Format(options.ScheduleClassInfoMessageTemplate,
 					GetClassInfoField(classInfo.DisciplineName),
