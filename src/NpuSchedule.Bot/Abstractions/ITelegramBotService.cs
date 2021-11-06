@@ -17,7 +17,7 @@ namespace NpuSchedule.Bot.Abstractions {
 		bool IsTokenCorrect(string token);
 		
 		Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null);
-		Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null);
+		Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null);
 
 	}
 

@@ -80,12 +80,12 @@ namespace NpuSchedule.Bot.Services {
 					break;
 				case "/week":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekScheduleAsync(RelativeScheduleWeek.Current, message.Chat.Id);
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id);
 					}
 					break;
 				case "/nextweek":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendWeekScheduleAsync(RelativeScheduleWeek.Next, message.Chat.Id);
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id);
 					}
 					break;
 				case "/health":
@@ -141,7 +141,7 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		/// <inheritdoc />
-		public async Task SendWeekScheduleAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+		public async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
 			try {
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
 				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
