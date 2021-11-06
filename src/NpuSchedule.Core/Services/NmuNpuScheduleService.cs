@@ -65,9 +65,12 @@ namespace NpuSchedule.Core.Services {
 			try {
 				//n=700 should be as url parameter, otherwise it doesn't work
 				var response = await client.PostAsync(scheduleRequestUri, new ByteArrayContent(contentBytes));
-
-				var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
-				rawHtml = responseContentBytes.FromWindows1251();
+				if(response.IsSuccessStatusCode) {
+					var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
+					rawHtml = responseContentBytes.FromWindows1251();
+				} else {
+					throw new HttpRequestException($"Response status code is: {response.StatusCode} but must be 2**");
+				}
 			} catch(HttpRequestException ex) {
 				logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(client.BaseAddress!, scheduleRequestUri));
 				throw;
