@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using NpuSchedule.Common.Enums;
+using TimeZoneConverter;
 
 namespace NpuSchedule.Common.Extensions {
 
@@ -11,8 +12,8 @@ namespace NpuSchedule.Common.Extensions {
 
 		private const string timeZoneId = "FLE Standard Time";
 		private const int daysToSearchForClosestScheduleDay = 30;
-		
-		private static readonly TimeZoneInfo npuTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+
+		private static readonly TimeZoneInfo npuTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
 
 		private static DateTimeOffset GetCurrentDateTimeOffset() 
 			=> TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, npuTimeZone);
