@@ -11,7 +11,7 @@ namespace NpuSchedule.Core.Abstractions {
 		/// <param name="endDate"></param>
 		/// <param name="groupName">If groupName is null - default group name will be used</param>
 		/// <param name="startDate"></param>
-		Task<IAsyncEnumerable<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
+		Task<IList<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null);
 
 		/// <summary>
 		/// Searches for the first occurrence of schedule day within date range. If nothing found - returns null

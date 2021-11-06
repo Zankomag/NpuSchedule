@@ -20,7 +20,7 @@ namespace NpuSchedule.Core.Services {
 	/// </summary>
 	public class NmuNpuScheduleService : INpuScheduleService {
 		
-		private const string ClassFieldSeparator = "*|*";
+		private const string classFieldsSeparator = "*|*";
 
 		private readonly NpuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
@@ -36,15 +36,16 @@ namespace NpuSchedule.Core.Services {
 		}
 
 		/// <inheritdoc />
-		public async Task<IAsyncEnumerable<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
+		public async Task<IList<ScheduleDay>> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
 			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
-			return ParseRangeSchedule(rawHtml);
+			return await ParseRangeSchedule(rawHtml);
 		}
 
 		/// <inheritdoc />
 		public async Task<ScheduleDay> GetFirstScheduleDayAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
 			string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
-			return await ParseRangeSchedule(rawHtml, 1).FirstOrDefaultAsync();
+			var scheduleDays = await ParseRangeSchedule(rawHtml, 1);
+			return scheduleDays.FirstOrDefault();
 		}
 
 		
@@ -79,18 +80,20 @@ namespace NpuSchedule.Core.Services {
 			return rawHtml;
 		}
 		
-		async IAsyncEnumerable<ScheduleDay> ParseRangeSchedule(string rawHtml, int maxCount = Int32.MaxValue)
+		async Task<IList<ScheduleDay>> ParseRangeSchedule(string rawHtml, int maxCount = Int32.MaxValue)
 		{
 			if(String.IsNullOrWhiteSpace(rawHtml)) throw new ArgumentException("Value cannot be null or whitespace.", nameof(rawHtml));
-
+			
 			const string daySelector = "div.container div.row div.col-md-6:not(.col-xs-12)";
 			var document = await browsingContext.OpenAsync(r => r.Content(rawHtml));
 			var days = document.QuerySelectorAll(daySelector);
 			var maxLength = Math.Min(days.Length, maxCount);
+			var scheduleDays = new List<ScheduleDay>(maxLength);
 			
 			for (int i = 0; i < maxLength; i++)
-				yield return ParseDaySchedule(days[i]);
-			
+				scheduleDays.Add(ParseDaySchedule(days[i]));
+
+			return scheduleDays;
 		}
 		
 		ScheduleDay ParseDaySchedule(IElement rawDay)
@@ -133,8 +136,8 @@ namespace NpuSchedule.Core.Services {
 			}
 			
 			const int indexOfEndTime = 5;
-			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, ClassFieldSeparator);
-			var rawStartAndEndTime = timeClass?.Split(ClassFieldSeparator);
+			string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, classFieldsSeparator);
+			var rawStartAndEndTime = timeClass?.Split(classFieldsSeparator);
 			TimeSpan startTime;
 			TimeSpan endTime;
 			
@@ -181,7 +184,7 @@ namespace NpuSchedule.Core.Services {
 		ClassInfo ParseClassInfo(IElement classInfoObj)
 		{
 			var meetUrl = classInfoObj.QuerySelector("div.link a")?.InnerHtml;
-			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", ClassFieldSeparator + "ауд");
+			classInfoObj.InnerHtml = classInfoObj.InnerHtml.Replace(" ауд", classFieldsSeparator + "ауд");
 
 			bool isRemote = false;
 			if (classInfoObj.InnerHtml.Contains("class=\"remote_work\""))
@@ -213,9 +216,9 @@ namespace NpuSchedule.Core.Services {
 				if (childIndex == 4) discipline += $" ({classInfoObj.ChildNodes[2].TextContent.Trim()})";
 				
 				var rawTeacherAndClassroom = classInfoObj.ChildNodes[childIndex].TextContent;
-				if (rawTeacherAndClassroom.Contains(ClassFieldSeparator))
+				if (rawTeacherAndClassroom.Contains(classFieldsSeparator))
 				{
-					var teacherAndClassroom = rawTeacherAndClassroom.Split(ClassFieldSeparator);
+					var teacherAndClassroom = rawTeacherAndClassroom.Split(classFieldsSeparator);
 					teacher = teacherAndClassroom[0].Trim();
 					classroom = teacherAndClassroom[1].Trim();
 				}
