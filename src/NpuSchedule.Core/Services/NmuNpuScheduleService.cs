@@ -211,6 +211,10 @@ namespace NpuSchedule.Core.Services {
 				_ => -1
 			};
 
+			// Handling a rare case when the node count < 9 but the 4th is not empty.
+			if (childIndex == 2 && !string.IsNullOrWhiteSpace(classInfoObj.ChildNodes[4].TextContent))
+				childIndex = 4;
+			
 			if (childIndex != -1)
 			{
 				if (childIndex == 4) discipline += $" ({classInfoObj.ChildNodes[2].TextContent.Trim()})";
