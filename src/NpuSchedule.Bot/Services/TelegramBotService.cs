@@ -42,7 +42,7 @@ namespace NpuSchedule.Bot.Services {
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
 			//TODO workaround this so it won't block
-			botUsername = client.GetMeAsync().Result.Username;
+			botUsername = $"@{client.GetMeAsync().Result.Username}";
 			startTime = DateTime.UtcNow;
 		}
 
@@ -52,40 +52,51 @@ namespace NpuSchedule.Bot.Services {
 			if(message.Date < startTime.AddMinutes(-2)) return;
 
 			//If command contains bot username we need to exclude it from command (/btc@MyBtcBot should be /btc)
-			int atIndex = message.Text.IndexOf('@');
-			
-			//Bot should not respond to commands in group chats without direct mention
-			if(message.From.Id != message.Chat.Id && atIndex != -1 && message.Text[(atIndex + 1)..] != botUsername) 
+			int botMentionIndex = message.Text.IndexOf(botUsername, StringComparison.Ordinal);
+			int spaceIndex = message.Text.IndexOf(' ');
+
+			//There should not be spaces between @botUsername and /command (should be as /command@botUsername). Also space cannot be first char
+			if(botMentionIndex > spaceIndex || spaceIndex == 0)
 				return;
 			
-			string command = atIndex == -1 ? message.Text : message.Text[..atIndex];
+			//Bot should not respond to commands in group chats without direct mention
+			if(message.From.Id != message.Chat.Id && botMentionIndex == -1)
+				return;
+
+			(string command, string arg) = (botMentionIndex, spaceIndex) switch {
+				(-1, -1) => (message.Text, null),
+				(_, -1) => (message.Text[..botMentionIndex], null),
+				(-1, _) => (message.Text[..spaceIndex], message.Text[spaceIndex..]),
+				(_, _) => (message.Text[..botMentionIndex], message.Text[spaceIndex..])
+			};
+			
 
 			//TODO refactor allowed chat:)
 			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
 			switch(command.ToLower()) {
 				case "/today":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id);
+						await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id, arg);
 					}
 					break;
 				case "/tomorrow":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id);
+						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id, arg);
 					}
 					break;
 				case "/closest":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id);
+						await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id, arg);
 					}
 					break;
 				case "/week":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id);
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id, arg);
 					}
 					break;
 				case "/nextweek":
 					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id);
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id, arg);
 					}
 					break;
 				case "/health":
@@ -203,7 +214,8 @@ namespace NpuSchedule.Bot.Services {
 					GetClassInfoField(classInfo.DisciplineName),
 					GetClassInfoField(classInfo.Teacher),
 					GetClassInfoField(classInfo.Classroom),
-					GetClassInfoField(classInfo.OnlineMeetingUrl));
+					GetClassInfoField(classInfo.OnlineMeetingUrl),
+					classInfo.IsRemote ? options.IsRemoteClassMessage : null);
 
 		private string GetClassInfoField(string classInfoField)
 			=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
