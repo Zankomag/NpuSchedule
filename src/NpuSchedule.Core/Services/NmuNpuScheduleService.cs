@@ -71,11 +71,12 @@ namespace NpuSchedule.Core.Services {
 				} else {
 					throw new HttpRequestException($"Response status code is: {response.StatusCode} but must be 2**");
 				}
-			} catch(HttpRequestException ex) {
+			} catch(HttpRequestException ex) { //TODO send response to tg
 				logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(client.BaseAddress!, scheduleRequestUri));
 				throw;
 			} catch(Exception ex) {
 				logger.LogError(ex, "Unhandled exception thrown while handling web response");
+				throw;
 			}
 			return rawHtml;
 		}
