@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -146,7 +147,16 @@ namespace NpuSchedule.Bot.Services {
 					message = GetScheduleWeekMessage(schedule, startDate, endDate);
 				}
 				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
-			} catch(Exception ex) {
+			} catch(HttpRequestException ex) {
+				logger.LogError(ex, "Received exception while sending day schedule message");
+			} catch(TaskCanceledException ex) {
+				try {
+					await client.SendTextMessageAsync(chatId, options.NpuSiteIsDownMessage);
+				} catch(Exception ex2) {
+					logger.LogError(ex2, "Received exception while sending telegram message");
+				}
+			} 
+			catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending day schedule message");
 			}
 		}

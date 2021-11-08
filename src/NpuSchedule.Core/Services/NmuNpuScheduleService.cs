@@ -71,11 +71,14 @@ namespace NpuSchedule.Core.Services {
 				} else {
 					throw new HttpRequestException($"Response status code is: {response.StatusCode} but must be 2**");
 				}
-			} catch(HttpRequestException ex) { //TODO send response to tg
+			} catch(HttpRequestException ex) { 
 				logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(client.BaseAddress!, scheduleRequestUri));
 				throw;
+			} catch(TaskCanceledException ex) {
+				logger.LogError(ex, "Exception thrown during request to {Uri}: Site response timed out", new Uri(client.BaseAddress!, scheduleRequestUri)); 
+				throw;
 			} catch(Exception ex) {
-				logger.LogError(ex, "Unhandled exception thrown while handling web response");
+				logger.LogError(ex, "Unhandled exception thrown while handling web response"); //System.Threading.Tasks.TaskCanceledException
 				throw;
 			}
 			return rawHtml;

@@ -61,6 +61,9 @@ namespace NpuSchedule.Bot.Configs {
 		
 		[Required]
 		public string IsRemoteClassMessage { get; init; }
+		
+		[Required]
+		public string NpuSiteIsDownMessage { get; init; }
 
 		public bool IsUserAdmin(long userId) => AdminIds.Contains(userId);
 		public bool IsChatAllowed(long chatId) => AllowedChatIds.Contains(chatId);
