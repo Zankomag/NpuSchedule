@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using NpuSchedule.Common.Enums;
+using TimeZoneConverter;
 
 namespace NpuSchedule.Common.Extensions {
 
@@ -11,8 +12,8 @@ namespace NpuSchedule.Common.Extensions {
 
 		private const string timeZoneId = "FLE Standard Time";
 		private const int daysToSearchForClosestScheduleDay = 30;
-		
-		private static readonly TimeZoneInfo npuTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+
+		private static readonly TimeZoneInfo npuTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
 
 		private static DateTimeOffset GetCurrentDateTimeOffset() 
 			=> TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, npuTimeZone);
@@ -35,7 +36,7 @@ namespace NpuSchedule.Common.Extensions {
 				(RelativeScheduleDay.Tomorrow, _) 
 					=> GetSingleDateTimeOffsetRange(GetTomorrowDateTimeOffset(currentNpuDate)), //Range from Tomorrow to Tomorrow
 				(RelativeScheduleDay.Closest, _) 
-					=> (currentNpuDate, AddDaysToDateTimeOffset(currentNpuDate, daysToSearchForClosestScheduleDay)), //Range from Today to Today+daysToSearchForClosestScheduleDay
+					=> (currentNpuDate.Hour < 16 ? currentNpuDate : AddDaysToDateTimeOffset(currentNpuDate, 1), AddDaysToDateTimeOffset(currentNpuDate, daysToSearchForClosestScheduleDay)), //Range from Today to Today+daysToSearchForClosestScheduleDay
 				( _, _) => throw new InvalidEnumArgumentException(nameof(scheduleDay), (int)scheduleDay, typeof(RelativeScheduleDay))
 			};
 		}
@@ -56,7 +57,7 @@ namespace NpuSchedule.Common.Extensions {
 		private static double GetDaysToNextMonday(DayOfWeek currentDayOfWeek) => GetDaysToCurrentMonday(currentDayOfWeek) + 7d;
 		
 		private static (DateTimeOffset StartDateTimeOffset, DateTimeOffset EndDateTimeOffset) GetWeekDateTimeOffsetRange(DateTimeOffset mondayDateTimeOffset)
-		 => (mondayDateTimeOffset, AddDaysToDateTimeOffset(mondayDateTimeOffset, 7d));
+		 => (mondayDateTimeOffset, AddDaysToDateTimeOffset(mondayDateTimeOffset, 6d));
 
 		private static DateTimeOffset GetNextMondayDateTimeOffset(DateTimeOffset currentDate)
 			=> AddDaysToDateTimeOffset(currentDate, GetDaysToNextMonday(currentDate.DayOfWeek));

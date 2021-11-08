@@ -71,11 +71,15 @@ namespace NpuSchedule.Core.Services {
 				} else {
 					throw new HttpRequestException($"Response status code is: {response.StatusCode} but must be 2**");
 				}
-			} catch(HttpRequestException ex) {
+			} catch(HttpRequestException ex) { 
 				logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(client.BaseAddress!, scheduleRequestUri));
 				throw;
+			} catch(TaskCanceledException ex) {
+				logger.LogError(ex, "Exception thrown during request to {Uri}: Site response timed out", new Uri(client.BaseAddress!, scheduleRequestUri)); 
+				throw;
 			} catch(Exception ex) {
-				logger.LogError(ex, "Unhandled exception thrown while handling web response");
+				logger.LogError(ex, "Unhandled exception thrown while handling web response"); //System.Threading.Tasks.TaskCanceledException
+				throw;
 			}
 			return rawHtml;
 		}
@@ -211,6 +215,10 @@ namespace NpuSchedule.Core.Services {
 				_ => -1
 			};
 
+			// Handling a rare case when the node count < 9 but the 4th is not empty.
+			if (childIndex == 2 && !string.IsNullOrWhiteSpace(classInfoObj.ChildNodes[4].TextContent))
+				childIndex = 4;
+			
 			if (childIndex != -1)
 			{
 				if (childIndex == 4) discipline += $" ({classInfoObj.ChildNodes[2].TextContent.Trim()})";

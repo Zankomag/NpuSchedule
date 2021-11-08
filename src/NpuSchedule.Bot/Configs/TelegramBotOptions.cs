@@ -28,7 +28,7 @@ namespace NpuSchedule.Bot.Configs {
 		public string ScheduleClassInfoFieldTemplate { get; init; }
 		
 		[Required]
-		[FormatStringPlaceholderIndexesCount(4)]
+		[FormatStringPlaceholderIndexesCount(5)]
 		public string ScheduleClassInfoMessageTemplate { get; init; }
 		
 		[Required]
@@ -58,6 +58,12 @@ namespace NpuSchedule.Bot.Configs {
 		
 		[Required]
 		public string NoClassesMessage { get; init; }
+		
+		[Required]
+		public string IsRemoteClassMessage { get; init; }
+		
+		[Required]
+		public string NpuSiteIsDownMessage { get; init; }
 
 		public bool IsUserAdmin(long userId) => AdminIds.Contains(userId);
 		public bool IsChatAllowed(long chatId) => AllowedChatIds.Contains(chatId);
