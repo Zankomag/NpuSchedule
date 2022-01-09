@@ -32,7 +32,7 @@ namespace NpuSchedule.Bot {
 				app.UseDeveloperExceptionPage();
 			}
 
-			//app.UseHttpsRedirection();
+			app.UseHttpsRedirection();
 
 			app.UseRouting();
 
