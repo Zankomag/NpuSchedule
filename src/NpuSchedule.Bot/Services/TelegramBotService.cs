@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Bot.Configs;
+using NpuSchedule.Bot.Extensions;
 using NpuSchedule.Common.Enums;
 using NpuSchedule.Common.Extensions;
 using NpuSchedule.Common.Utils;
@@ -26,7 +27,7 @@ namespace NpuSchedule.Bot.Services {
 	
 	public class TelegramBotService : ITelegramBotService {
 		
-		private readonly TelegramBotClient client;
+		private readonly ITelegramBotClient client;
 		private readonly ILogger<TelegramBotService> logger;
 		private readonly INpuScheduleService npuScheduleService;
 		private readonly DateTime startTime;
@@ -64,6 +65,7 @@ namespace NpuSchedule.Bot.Services {
 			if(message.From.Id != message.Chat.Id && botMentionIndex == -1)
 				return;
 
+			//This implementation calculates only single arg (all text after command). To calculate arg list changes needed
 			(string command, string arg) = (botMentionIndex, spaceIndex) switch {
 				(-1, -1) => (message.Text, null),
 				(_, -1) => (message.Text[..botMentionIndex], null),
@@ -146,12 +148,12 @@ namespace NpuSchedule.Bot.Services {
 				} else {
 					message = GetScheduleWeekMessage(schedule, startDate, endDate);
 				}
-				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
+				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(HttpRequestException ex) {
 				logger.LogError(ex, "Received exception while sending day schedule message");
-			} catch(TaskCanceledException ex) {
+			} catch(TaskCanceledException) {
 				try {
-					await client.SendTextMessageAsync(chatId, options.NpuSiteIsDownMessage);
+					await client.SendTextMessageWithRetryAsync(chatId, options.NpuSiteIsDownMessage);
 				} catch(Exception ex2) {
 					logger.LogError(ex2, "Received exception while sending telegram message");
 				}
@@ -167,7 +169,7 @@ namespace NpuSchedule.Bot.Services {
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
 				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
 				string message = GetScheduleWeekMessage(schedule, startDate, endDate);
-				await client.SendTextMessageAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
+				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending single schedule message");
 			}
