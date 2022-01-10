@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -103,8 +104,9 @@ namespace NpuSchedule.Bot.Services {
 					}
 					break;
 				case "/health":
+				case "/version":
 					if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
-						await client.SendTextMessageAsync(message.From.Id, $"Running\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
+						await client.SendTextMessageAsync(message.From.Id, $"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
 					}
 					break;
 			}
