@@ -11,7 +11,7 @@ namespace NpuSchedule.Core.Extensions {
 	public static class ServiceCollectionExtensions {
 
 		public static IServiceCollection AddNpuScheduleServiceServices(this IServiceCollection services, IConfiguration configuration) {
-			services.AddOptions<NpuScheduleOptions>(configuration, NpuScheduleOptions.SectionName);
+			services.AddOptions<NmuScheduleOptions>(configuration, NmuScheduleOptions.SectionName);
 			services.AddSingleton<INpuScheduleService, NmuNpuScheduleService>();
 			services.AddHttpClient<NmuNpuScheduleService>();
 			services.AddAngleSharp();
