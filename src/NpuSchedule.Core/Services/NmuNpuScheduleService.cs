@@ -21,12 +21,12 @@ namespace NpuSchedule.Core.Services {
 		
 		private const string classFieldsSeparator = "*|*";
 
-		private readonly NpuScheduleOptions options;
+		private readonly NmuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
 		private readonly IBrowsingContext browsingContext;
 		private readonly IHttpClientFactory httpClientFactory;
 
-		public NmuNpuScheduleService(IOptions<NpuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger, 
+		public NmuNpuScheduleService(IOptions<NmuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger, 
 			IBrowsingContext browsingContext, IHttpClientFactory httpClientFactory) {
 			this.options = options.Value;
 			this.logger = logger;
@@ -57,13 +57,14 @@ namespace NpuSchedule.Core.Services {
 			};
 			var contentBytes = content.GetUrlEncodedContent().ToWindows1251();
 			HttpClient client = httpClientFactory.CreateClient();
-			client.BaseAddress = new Uri(@"http://nmu.npu.edu.ua");
+			client.BaseAddress = new Uri(options.NmuAddress);
+
+			//n=700 should be as url parameter, otherwise it doesn't work
 			const string scheduleRequestUri = @"cgi-bin/timetable.cgi?n=700";
 
 			string rawHtml = null;
 			
 			try {
-				//n=700 should be as url parameter, otherwise it doesn't work
 				var response = await client.PostAsync(scheduleRequestUri, new ByteArrayContent(contentBytes));
 				if(response.IsSuccessStatusCode) {
 					var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
