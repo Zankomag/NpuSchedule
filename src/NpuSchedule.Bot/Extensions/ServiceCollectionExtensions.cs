@@ -5,6 +5,8 @@ using NpuSchedule.Bot.Configs;
 using NpuSchedule.Bot.Services;
 using NpuSchedule.Common.Extensions;
 
+// ReSharper disable UnusedMethodReturnValue.Global
+
 namespace NpuSchedule.Bot.Extensions {
 
 	public static class ServiceCollectionExtensions {

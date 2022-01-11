@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
@@ -20,14 +19,13 @@ using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InlineQueryResults;
 
 // ReSharper disable SwitchStatementHandlesSomeKnownEnumValuesWithDefault
 
 namespace NpuSchedule.Bot.Services {
-	
+
 	public class TelegramBotService : ITelegramBotService {
-		
+
 		private readonly ITelegramBotClient client;
 		private readonly ILogger<TelegramBotService> logger;
 		private readonly INpuScheduleService npuScheduleService;
@@ -44,6 +42,7 @@ namespace NpuSchedule.Bot.Services {
 			this.npuScheduleService = npuScheduleService;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
+
 			//TODO workaround this so it won't block
 			botUsername = $"@{client.GetMeAsync().Result.Username}";
 			startTime = DateTime.UtcNow;
@@ -61,7 +60,7 @@ namespace NpuSchedule.Bot.Services {
 			//There should not be spaces between @botUsername and /command (should be as /command@botUsername). Also space cannot be first char
 			if(botMentionIndex > spaceIndex || spaceIndex == 0)
 				return;
-			
+
 			//Bot should not respond to commands in group chats without direct mention
 			if(message.From.Id != message.Chat.Id && botMentionIndex == -1)
 				return;
@@ -73,7 +72,7 @@ namespace NpuSchedule.Bot.Services {
 				(-1, _) => (message.Text[..spaceIndex], message.Text[spaceIndex..]),
 				(_, _) => (message.Text[..botMentionIndex], message.Text[spaceIndex..])
 			};
-			
+
 
 			//TODO refactor allowed chat:)
 			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
@@ -106,7 +105,8 @@ namespace NpuSchedule.Bot.Services {
 				case "/health":
 				case "/version":
 					if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
-						await client.SendTextMessageAsync(message.From.Id, $"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
+						await client.SendTextMessageAsync(message.From.Id,
+							$"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
 					}
 					break;
 			}
@@ -125,7 +125,8 @@ namespace NpuSchedule.Bot.Services {
 				case UpdateType.InlineQuery:
 					await HandleInlineQueryAsync(update.InlineQuery);
 					break;
-				default: logger.LogWarning("Update type {update.Type} is not supported", update.Type);
+				default:
+					logger.LogWarning("Update type {update.Type} is not supported", update.Type);
 					break;
 			}
 
@@ -159,8 +160,7 @@ namespace NpuSchedule.Bot.Services {
 				} catch(Exception ex2) {
 					logger.LogError(ex2, "Received exception while sending telegram message");
 				}
-			} 
-			catch(Exception ex) {
+			} catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending day schedule message");
 			}
 		}
@@ -179,12 +179,12 @@ namespace NpuSchedule.Bot.Services {
 
 		//TODO Move all message getters to Ui service
 		private string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
-			
+
 			string scheduleWeekDays;
 			if(schedule.ScheduleDays == null || schedule.ScheduleDays.Count == 0) {
 				scheduleWeekDays = options.NoClassesMessage;
 			} else {
-				StringBuilder scheduleDayClassesBuilder = new StringBuilder();
+				StringBuilder scheduleDayClassesBuilder = new();
 				foreach(ScheduleDay scheduleDay in schedule.ScheduleDays) {
 					scheduleDayClassesBuilder.AppendFormat(options.ScheduleDayMessageTemplate,
 						scheduleDay.Date,
@@ -195,9 +195,9 @@ namespace NpuSchedule.Bot.Services {
 			}
 			return String.Format(options.ScheduleWeekMessageTemplate, startDate, endDate, schedule.GroupName, scheduleWeekDays);
 		}
-		
+
 		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, DateTimeOffset date, string groupName) {
-			
+
 			string scheduleDayClasses;
 			if(scheduleDay?.Classes?.Any() != true) {
 				scheduleDayClasses = options.NoClassesMessage;
@@ -208,7 +208,7 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		private string GetScheduleDayClassesMessage(ScheduleDay scheduleDay) {
-			StringBuilder scheduleDayClassesBuilder = new StringBuilder();
+			StringBuilder scheduleDayClassesBuilder = new();
 			for(int i = 0; i < scheduleDay.Classes.Count; i++) {
 				var @class = scheduleDay.Classes[i];
 				scheduleDayClassesBuilder.AppendFormat(options.ScheduleClassMessageTemplate,
@@ -222,14 +222,14 @@ namespace NpuSchedule.Bot.Services {
 			}
 			return scheduleDayClassesBuilder.ToString();
 		}
-		
+
 		private string GetClassInfoMessage(ClassInfo classInfo)
 			=> String.Format(options.ScheduleClassInfoMessageTemplate,
-					GetClassInfoField(classInfo.DisciplineName),
-					GetClassInfoField(classInfo.Teacher),
-					GetClassInfoField(classInfo.Classroom),
-					GetClassInfoField(classInfo.OnlineMeetingUrl),
-					classInfo.IsRemote ? options.IsRemoteClassMessage : null);
+				GetClassInfoField(classInfo.DisciplineName),
+				GetClassInfoField(classInfo.Teacher),
+				GetClassInfoField(classInfo.Classroom),
+				GetClassInfoField(classInfo.OnlineMeetingUrl),
+				classInfo.IsRemote ? options.IsRemoteClassMessage : null);
 
 		private string GetClassInfoField(string classInfoField)
 			=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;

@@ -99,7 +99,7 @@ namespace NpuSchedule.Core.Services {
 			return scheduleDays;
 		}
 		
-		ScheduleDay ParseDaySchedule(IElement rawDay)
+		ScheduleDay ParseDaySchedule(IParentNode rawDay)
 		{
 			var rawDate = rawDay.QuerySelector("h4")?.TextContent.Split(" ")[0];
 			DateTimeOffset date;
@@ -116,10 +116,10 @@ namespace NpuSchedule.Core.Services {
 			var classes = new List<Class>();
 			var rawClasses = rawDay.QuerySelectorAll("tr");
 
-			for (int i = 0; i < rawClasses.Length; i++)
-				if (rawClasses[i].InnerHtml.Contains("class=\"link\""))
-					classes.Add(ParseClass(rawClasses[i]));
-			
+			foreach(IElement t in rawClasses)
+				if (t.InnerHtml.Contains("class=\"link\""))
+					classes.Add(ParseClass(t));
+
 			return new ScheduleDay { Date = date, Classes = classes };
 		}
 

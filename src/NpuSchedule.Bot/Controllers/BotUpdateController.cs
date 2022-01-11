@@ -11,9 +11,7 @@ namespace NpuSchedule.Bot.Controllers {
 
 		private readonly ITelegramBotService telegramBotService;
 
-		public BotUpdateController(ITelegramBotService telegramBotService) {
-			this.telegramBotService = telegramBotService;
-		}
+		public BotUpdateController(ITelegramBotService telegramBotService) => this.telegramBotService = telegramBotService;
 
 		[HttpPost("{token}")]
 		public async Task<IActionResult> PostUpdate([FromBody] Update update, string token) {
