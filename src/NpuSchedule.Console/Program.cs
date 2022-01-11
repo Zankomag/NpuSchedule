@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Net.Http;
+using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NpuSchedule.Common.Enums;
 using NpuSchedule.Common.Extensions;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Extensions;
@@ -27,8 +23,9 @@ var logger = host.Services.GetRequiredService<ILogger<object>>();
 logger.LogInformation("Requesting closest day schedule");
 
 var npuScheduleService = host.Services.GetRequiredService<INpuScheduleService>();
-//var rawHtml = await npuScheduleService.GetRawHtmlScheduleResponse(DateTime.Now.AddDays(1), DateTime.Now.AddDays(2));
+(DateTimeOffset startDateTimeOffset, DateTimeOffset endDateTimeOffset) = RelativeScheduleDay.Closest.GetScheduleDateTimeOffsetRange();
+var schedule = await npuScheduleService.GetSchedulesAsync(startDateTimeOffset, endDateTimeOffset);
 
-//logger.LogInformation(rawHtml);
+logger.LogInformation("Number of classes on {StartDateTimeOffset} for {GroupName}: {ClassCount}", startDateTimeOffset, schedule.GroupName, schedule.ScheduleDays.Count > 0 ? schedule.ScheduleDays.First().Classes.Count : 0);
 
 Console.ReadLine();

@@ -6,6 +6,8 @@ using NpuSchedule.Core.Configs;
 using NpuSchedule.Core.Services;
 using IConfiguration = Microsoft.Extensions.Configuration.IConfiguration;
 
+// ReSharper disable UnusedMethodReturnValue.Global
+
 namespace NpuSchedule.Core.Extensions {
 
 	public static class ServiceCollectionExtensions {

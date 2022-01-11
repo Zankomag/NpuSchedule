@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using NpuSchedule.Common.Enums;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -7,10 +6,6 @@ using Telegram.Bot.Types;
 namespace NpuSchedule.Bot.Abstractions {
 	
 	public interface ITelegramBotService : IUpdateHandler {
-
-		Task HandleMessageAsync(Message message);
-
-		Task HandleInlineQueryAsync(InlineQuery inlineQuery);
 
 		Task HandleUpdateAsync(Update update);
 
