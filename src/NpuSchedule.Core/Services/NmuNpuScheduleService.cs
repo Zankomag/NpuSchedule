@@ -24,14 +24,16 @@ namespace NpuSchedule.Core.Services {
 		private readonly NmuScheduleOptions options;
 		private readonly ILogger<NmuNpuScheduleService> logger;
 		private readonly IBrowsingContext browsingContext;
-		private readonly IHttpClientFactory httpClientFactory;
+		private readonly HttpClient nmuClient;
 
 		public NmuNpuScheduleService(IOptions<NmuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger, 
 			IBrowsingContext browsingContext, IHttpClientFactory httpClientFactory) {
 			this.options = options.Value;
 			this.logger = logger;
 			this.browsingContext = browsingContext;
-			this.httpClientFactory = httpClientFactory;
+			
+			nmuClient = httpClientFactory.CreateClient();
+			nmuClient.BaseAddress = new Uri(this.options.NmuAddress);
 		}
 
 		/// <inheritdoc />
@@ -46,9 +48,7 @@ namespace NpuSchedule.Core.Services {
 				ScheduleDays = scheduleDays
 			};
 		}
-
-
-		//TODO refactor
+		
 		private async Task<string> GetRawHtmlScheduleResponse(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
 			var content = new Dictionary<string, string> {
 				{ "sdate", startDate.ToString("dd.MM.yyyy") },
@@ -56,30 +56,28 @@ namespace NpuSchedule.Core.Services {
 				{ "group", groupName },
 			};
 			var contentBytes = content.GetUrlEncodedContent().ToWindows1251();
-			HttpClient client = httpClientFactory.CreateClient();
-			client.BaseAddress = new Uri(options.NmuAddress);
 
 			//n=700 should be as url parameter, otherwise it doesn't work
 			const string scheduleRequestUri = @"cgi-bin/timetable.cgi?n=700";
 
-			string rawHtml = null;
+			string rawHtml;
 			
 			try {
-				var response = await client.PostAsync(scheduleRequestUri, new ByteArrayContent(contentBytes));
+				var response = await nmuClient.PostAsync(scheduleRequestUri, new ByteArrayContent(contentBytes));
 				if(response.IsSuccessStatusCode) {
 					var responseContentBytes = await response.Content.ReadAsByteArrayAsync();
 					rawHtml = responseContentBytes.FromWindows1251().Replace("windows-1251", "utf-8");
 				} else {
-					throw new HttpRequestException($"Response status code is: {response.StatusCode} but must be 2**");
+					throw new HttpRequestException($"Response status code does not indicate success: {response.StatusCode}");
 				}
 			} catch(HttpRequestException ex) { 
-				logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(client.BaseAddress!, scheduleRequestUri));
+				logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(nmuClient.BaseAddress!, scheduleRequestUri));
 				throw;
 			} catch(TaskCanceledException ex) {
-				logger.LogError(ex, "Exception thrown during request to {Uri}: Site response timed out", new Uri(client.BaseAddress!, scheduleRequestUri)); 
+				logger.LogError(ex, "Exception thrown during request to {Uri}: Site response timed out", new Uri(nmuClient.BaseAddress!, scheduleRequestUri)); 
 				throw;
 			} catch(Exception ex) {
-				logger.LogError(ex, "Unhandled exception thrown while handling web response"); //System.Threading.Tasks.TaskCanceledException
+				logger.LogError(ex, "Unhandled exception thrown while handling web response");
 				throw;
 			}
 			return rawHtml;
@@ -132,7 +130,7 @@ namespace NpuSchedule.Core.Services {
 			int numberClass;
 			try
 			{
-				numberClass = int.Parse(rawClass.QuerySelector("td:nth-child(1)")?.TextContent!);
+				numberClass = Int32.Parse(rawClass.QuerySelector("td:nth-child(1)")?.TextContent!);
 			}
 			catch (Exception ex)
 			{
@@ -159,27 +157,29 @@ namespace NpuSchedule.Core.Services {
 			
 			var countClassInfo = rawClass.InnerHtml.CountSubstring("class=\"link\"");
 			
-			if (countClassInfo == 1)
-				firstClass = ParseClassInfo(rawClass.QuerySelector("td:nth-child(3)"));
-			else if (countClassInfo > 1)
-			{
-				var classInfo = rawClass.QuerySelector("td:nth-child(3)");
+			switch(countClassInfo) {
+				case 1: firstClass = ParseClassInfo(rawClass.QuerySelector("td:nth-child(3)"));
+					break;
+				case > 1: {
+					var classInfo = rawClass.QuerySelector("td:nth-child(3)");
 				
-				if (classInfo != null)
-				{
-					const string endFirstClass = "</div> ";
-					string tmp = classInfo.InnerHtml;
-					var startIndex = classInfo.InnerHtml.IndexOf(endFirstClass, StringComparison.Ordinal);
+					if (classInfo != null)
+					{
+						const string endFirstClass = "</div> ";
+						string tmp = classInfo.InnerHtml;
+						var startIndex = classInfo.InnerHtml.IndexOf(endFirstClass, StringComparison.Ordinal);
 						
-					// remove second
-					if (startIndex != -1)
-						classInfo.InnerHtml = classInfo.InnerHtml[..(startIndex + endFirstClass.Length)];
-					firstClass = ParseClassInfo(classInfo);
+						// remove second
+						if (startIndex != -1)
+							classInfo.InnerHtml = classInfo.InnerHtml[..(startIndex + endFirstClass.Length)];
+						firstClass = ParseClassInfo(classInfo);
 
-					// remove first and adaptation second classInfo for parser
-					if (startIndex != -1)
-						classInfo.InnerHtml = tmp[(startIndex + "</div> <br>".Length)..].Replace("  <div", "<br> <div");
-					secondClass = ParseClassInfo(classInfo);
+						// remove first and adaptation second classInfo for parser
+						if (startIndex != -1)
+							classInfo.InnerHtml = tmp[(startIndex + "</div> <br>".Length)..].Replace("  <div", "<br> <div");
+						secondClass = ParseClassInfo(classInfo);
+					}
+					break;
 				}
 			}
 			
@@ -217,7 +217,7 @@ namespace NpuSchedule.Core.Services {
 			};
 
 			// Handling a rare case when the node count < 9 but the 4th is not empty.
-			if (childIndex == 2 && !string.IsNullOrWhiteSpace(classInfoObj.ChildNodes[4].TextContent))
+			if (childIndex == 2 && !String.IsNullOrWhiteSpace(classInfoObj.ChildNodes[4].TextContent))
 				childIndex = 4;
 			
 			if (childIndex != -1)
