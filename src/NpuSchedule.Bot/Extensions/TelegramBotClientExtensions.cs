@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.Runtime.Internal.Util;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -14,7 +12,7 @@ using Telegram.Bot.Types.ReplyMarkups;
 // ReSharper disable UnusedMethodReturnValue.Global
 
 namespace NpuSchedule.Bot.Extensions {
-	
+
 	public static class TelegramBotClientExtensions {
 
 		private const int maxMessageLength = 4096;
@@ -23,6 +21,7 @@ namespace NpuSchedule.Bot.Extensions {
 		///     Adds retry logic for some cases of unsuccessful messages sent
 		/// </summary>
 		[SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
+		[SuppressMessage("ReSharper", "FunctionComplexityOverflow")]
 		public static async Task<IList<Message>> SendTextMessageWithRetryAsync(this ITelegramBotClient client, ChatId chatId, string text, ParseMode parseMode = default, IEnumerable<MessageEntity> entities = default,
 			bool disableWebPagePreview = default, bool disableNotification = default, int replyToMessageId = default, bool allowSendingWithoutReply = default,
 			IReplyMarkup replyMarkup = default, CancellationToken cancellationToken = default) {
@@ -39,6 +38,7 @@ namespace NpuSchedule.Bot.Extensions {
 					cancellationToken);
 			} catch(ApiRequestException ex) when(ex.Message.StartsWith("Bad Request: can't parse entities", StringComparison.Ordinal)) {
 				await WaitToPreventSpam();
+
 				//Sending message without markdown in case of broken entities
 				parseMode = ParseMode.Default;
 				text = String.Concat("Message has broken markdown entities, sending raw text:\n\n", text);
@@ -57,9 +57,9 @@ namespace NpuSchedule.Bot.Extensions {
 		public static async Task<IList<Message>> SendMessageSplitByLimitParts(this ITelegramBotClient client, bool sendWarning, ChatId chatId, string text, IEnumerable<MessageEntity> entities,
 			bool disableWebPagePreview, bool disableNotification, int replyToMessageId, bool allowSendingWithoutReply,
 			IReplyMarkup replyMarkup, CancellationToken cancellationToken) {
-			
+
 			List<Message> sentMessages = new List<Message>();
-			
+
 			if(sendWarning) {
 				text = String.Concat("Message is too long, sending row with several parts:\n\n", text);
 			}
