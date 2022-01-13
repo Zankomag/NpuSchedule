@@ -168,7 +168,7 @@ namespace NpuSchedule.Bot.Services {
 				case "/health":
 				case "/version":
 					if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
-						await client.SendTextMessageAsync(message.From.Id,
+						await client.SendTextMessageWithRetryAsync(message.From.Id,
 							$"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
 					}
 					break;
