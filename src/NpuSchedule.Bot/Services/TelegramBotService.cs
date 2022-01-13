@@ -32,7 +32,10 @@ namespace NpuSchedule.Bot.Services {
 		private readonly DateTime startTime;
 
 		private readonly TelegramBotOptions options;
-		private readonly string botUsername;
+		/// <summary>
+		/// Bot username with @ in front
+		/// </summary>
+		private readonly Lazy<Task<string>> botUsername;
 
 		/// <inheritdoc />
 		public UpdateType[] AllowedUpdates { get; } = { UpdateType.Message, UpdateType.InlineQuery };
@@ -42,13 +45,16 @@ namespace NpuSchedule.Bot.Services {
 			this.npuScheduleService = npuScheduleService;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
-
-			//TODO workaround this so it won't block
-			botUsername = $"@{client.GetMeAsync().Result.Username}";
+			
+			botUsername = new Lazy<Task<string>>(async () => await InitializeBotUsername());
 			startTime = DateTime.UtcNow;
 		}
 
-		/// <inheritdoc />
+		private async Task<string> InitializeBotUsername() {
+			var botInfo = await client.GetMeAsync();
+			return String.Concat('@', botInfo.Username);
+		}
+
 		async Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => await HandleUpdateAsync(update);
 
 		public async Task HandleUpdateAsync(Update update) {
@@ -111,17 +117,20 @@ namespace NpuSchedule.Bot.Services {
 			}
 		}
 
-		public async Task HandleMessageAsync(Message message) {
+		private async Task HandleMessageAsync(Message message) {
+			if(message is null) throw new ArgumentNullException(nameof(message));
+
 			//bot doesn't read old messages to avoid /*spam*/ 
 			//2 minutes threshold due to slow start of aws lambda
 			if(message.Date < startTime.AddMinutes(-2)) return;
 
 			//If command contains bot username we need to exclude it from command (/btc@MyBtcBot should be /btc)
-			int botMentionIndex = message.Text.IndexOf(botUsername, StringComparison.Ordinal);
+			string username = await botUsername.Value;
+			int botMentionIndex = message.Text.IndexOf(username, StringComparison.Ordinal);
 			int spaceIndex = message.Text.IndexOf(' ');
 
 			//There should not be spaces between @botUsername and /command (should be as /command@botUsername). Also space cannot be first char
-			if(botMentionIndex > spaceIndex || spaceIndex == 0)
+			if((spaceIndex != -1 && botMentionIndex > spaceIndex) || spaceIndex == 0)
 				return;
 
 			//Bot should not respond to commands in group chats without direct mention
@@ -175,7 +184,10 @@ namespace NpuSchedule.Bot.Services {
 			}
 		}
 
-		public Task HandleInlineQueryAsync(InlineQuery inlineQuery) => Task.CompletedTask;
+		private Task HandleInlineQueryAsync(InlineQuery inlineQuery) {
+			if(inlineQuery is null) throw new ArgumentNullException(nameof(inlineQuery));
+			return Task.CompletedTask;
+		}
 
 		//TODO Move all message getters to Ui service
 		private string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
