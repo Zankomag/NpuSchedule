@@ -48,6 +48,69 @@ namespace NpuSchedule.Bot.Services {
 			startTime = DateTime.UtcNow;
 		}
 
+		/// <inheritdoc />
+		async Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => await HandleUpdateAsync(update);
+
+		public async Task HandleUpdateAsync(Update update) {
+			switch(update.Type) {
+				case UpdateType.Message:
+					if(update.Message.Type == MessageType.Text) await HandleMessageAsync(update.Message);
+					break;
+				case UpdateType.InlineQuery:
+					await HandleInlineQueryAsync(update.InlineQuery);
+					break;
+				default:
+					logger.LogWarning("Update type {update.Type} is not supported", update.Type);
+					break;
+			}
+
+		}
+
+		/// <inheritdoc />
+		public Task HandleError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken) {
+			logger.LogError(exception, "Received an exception from Telegram Bot API");
+			return Task.CompletedTask;
+		}
+
+		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
+
+		/// <inheritdoc />
+		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
+			try {
+				string message;
+				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
+				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
+				if(schedule.ScheduleDays.Count == 1) {
+					message = GetSingleScheduleDayMessage(schedule.ScheduleDays[0], schedule.ScheduleDays[0].Date, schedule.GroupName);
+				} else {
+					message = GetScheduleWeekMessage(schedule, startDate, endDate);
+				}
+				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
+			} catch(HttpRequestException ex) {
+				logger.LogError(ex, "Received exception while sending day schedule message");
+			} catch(TaskCanceledException) {
+				try {
+					await client.SendTextMessageWithRetryAsync(chatId, options.NpuSiteIsDownMessage);
+				} catch(Exception ex2) {
+					logger.LogError(ex2, "Received exception while sending telegram message");
+				}
+			} catch(Exception ex) {
+				logger.LogError(ex, "Received exception while sending day schedule message");
+			}
+		}
+
+		/// <inheritdoc />
+		public async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+			try {
+				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
+				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
+				string message = GetScheduleWeekMessage(schedule, startDate, endDate);
+				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
+			} catch(Exception ex) {
+				logger.LogError(ex, "Received exception while sending single schedule message");
+			}
+		}
+
 		public async Task HandleMessageAsync(Message message) {
 			//bot doesn't read old messages to avoid /*spam*/ 
 			//2 minutes threshold due to slow start of aws lambda
@@ -113,69 +176,6 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		public Task HandleInlineQueryAsync(InlineQuery inlineQuery) => Task.CompletedTask;
-
-		/// <inheritdoc />
-		async Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => await HandleUpdateAsync(update);
-
-		public async Task HandleUpdateAsync(Update update) {
-			switch(update.Type) {
-				case UpdateType.Message:
-					if(update.Message.Type == MessageType.Text) await HandleMessageAsync(update.Message);
-					break;
-				case UpdateType.InlineQuery:
-					await HandleInlineQueryAsync(update.InlineQuery);
-					break;
-				default:
-					logger.LogWarning("Update type {update.Type} is not supported", update.Type);
-					break;
-			}
-
-		}
-
-		/// <inheritdoc />
-		public Task HandleError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken) {
-			logger.LogError(exception, "Received an exception from Telegram Bot API");
-			return Task.CompletedTask;
-		}
-
-		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
-
-		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
-			try {
-				string message;
-				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
-				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
-				if(schedule.ScheduleDays.Count == 1) {
-					message = GetSingleScheduleDayMessage(schedule.ScheduleDays[0], schedule.ScheduleDays[0].Date, schedule.GroupName);
-				} else {
-					message = GetScheduleWeekMessage(schedule, startDate, endDate);
-				}
-				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
-			} catch(HttpRequestException ex) {
-				logger.LogError(ex, "Received exception while sending day schedule message");
-			} catch(TaskCanceledException) {
-				try {
-					await client.SendTextMessageWithRetryAsync(chatId, options.NpuSiteIsDownMessage);
-				} catch(Exception ex2) {
-					logger.LogError(ex2, "Received exception while sending telegram message");
-				}
-			} catch(Exception ex) {
-				logger.LogError(ex, "Received exception while sending day schedule message");
-			}
-		}
-
-		/// <inheritdoc />
-		public async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
-			try {
-				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
-				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
-				string message = GetScheduleWeekMessage(schedule, startDate, endDate);
-				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
-			} catch(Exception ex) {
-				logger.LogError(ex, "Received exception while sending single schedule message");
-			}
-		}
 
 		//TODO Move all message getters to Ui service
 		private string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
