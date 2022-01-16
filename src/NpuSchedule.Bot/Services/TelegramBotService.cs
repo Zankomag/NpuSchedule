@@ -29,9 +29,10 @@ namespace NpuSchedule.Bot.Services {
 		private readonly ITelegramBotClient client;
 		private readonly ILogger<TelegramBotService> logger;
 		private readonly INpuScheduleService npuScheduleService;
-		private readonly DateTime startTime;
-
+		private readonly ITelegramBotUi botUi;
+		private readonly DateTimeOffset startTime;
 		private readonly TelegramBotOptions options;
+		
 		/// <summary>
 		/// Bot username with @ in front
 		/// </summary>
@@ -40,13 +41,14 @@ namespace NpuSchedule.Bot.Services {
 		/// <inheritdoc />
 		public UpdateType[] AllowedUpdates { get; } = { UpdateType.Message, UpdateType.InlineQuery };
 
-		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger, INpuScheduleService npuScheduleService) {
+		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger, INpuScheduleService npuScheduleService, ITelegramBotUi botUi) {
 			this.logger = logger;
 			this.npuScheduleService = npuScheduleService;
+			this.botUi = botUi;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
 			botUsername = new Lazy<Task<string>>(async () => await InitializeBotUsername());
-			startTime = DateTime.UtcNow;
+			startTime = DateTimeOffset.UtcNow.ConvertToNpuTimeZone();
 		}
 
 		private async Task<string> InitializeBotUsername() {
@@ -86,9 +88,9 @@ namespace NpuSchedule.Bot.Services {
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
 				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
 				if(schedule.ScheduleDays.Count == 1) {
-					message = GetSingleScheduleDayMessage(schedule.ScheduleDays[0], schedule.ScheduleDays[0].Date, schedule.GroupName);
+					message = botUi.GetSingleScheduleDayMessage(schedule.ScheduleDays[0], schedule.ScheduleDays[0].Date, schedule.GroupName);
 				} else {
-					message = GetScheduleWeekMessage(schedule, startDate, endDate);
+					message = botUi.GetScheduleWeekMessage(schedule, startDate, endDate);
 				}
 				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(HttpRequestException ex) {
@@ -109,7 +111,7 @@ namespace NpuSchedule.Bot.Services {
 			try {
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
 				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
-				string message = GetScheduleWeekMessage(schedule, startDate, endDate);
+				string message = botUi.GetScheduleWeekMessage(schedule, startDate, endDate);
 				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending single schedule message");
@@ -159,16 +161,13 @@ namespace NpuSchedule.Bot.Services {
 					case "/health":
 					case "/version":
 					case "/status":
-						await client.SendTextMessageWithRetryAsync(message.From.Id, GetStatusMessage());
+						if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
+							await client.SendTextMessageWithRetryAsync(message.From.Id, botUi.GetStatusMessage(startTime));
+						}
 						break;
 				}
 			}
 		}
-
-		private string GetStatusMessage() => $"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}"
-			+ $"\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}"
-			+ $"\ndotnet {Environment.Version}"
-			+ $"\nStart time: {startTime}";
 
 		/// <summary>
 		/// Splits message by command and single arg after command if exists
@@ -192,63 +191,6 @@ namespace NpuSchedule.Bot.Services {
 			if(inlineQuery is null) throw new ArgumentNullException(nameof(inlineQuery));
 			return Task.CompletedTask;
 		}
-
-		//TODO Move all message getters to Ui service
-		private string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
-
-			string scheduleWeekDays;
-			if(schedule.ScheduleDays == null || schedule.ScheduleDays.Count == 0) {
-				scheduleWeekDays = options.NoClassesMessage;
-			} else {
-				StringBuilder scheduleDayClassesBuilder = new();
-				foreach(ScheduleDay scheduleDay in schedule.ScheduleDays) {
-					scheduleDayClassesBuilder.AppendFormat(options.ScheduleDayMessageTemplate,
-						scheduleDay.Date,
-						GetScheduleDayClassesMessage(scheduleDay),
-						options.ScheduleDaySeparator);
-				}
-				scheduleWeekDays = scheduleDayClassesBuilder.ToString();
-			}
-			return String.Format(options.ScheduleWeekMessageTemplate, startDate, endDate, schedule.GroupName, scheduleWeekDays);
-		}
-
-		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, DateTimeOffset date, string groupName) {
-
-			string scheduleDayClasses;
-			if(scheduleDay?.Classes?.Any() != true) {
-				scheduleDayClasses = options.NoClassesMessage;
-			} else {
-				scheduleDayClasses = GetScheduleDayClassesMessage(scheduleDay);
-			}
-			return String.Format(options.SingleScheduleDayMessageTemplate, date, groupName, scheduleDayClasses);
-		}
-
-		private string GetScheduleDayClassesMessage(ScheduleDay scheduleDay) {
-			StringBuilder scheduleDayClassesBuilder = new();
-			for(int i = 0; i < scheduleDay.Classes.Count; i++) {
-				var @class = scheduleDay.Classes[i];
-				scheduleDayClassesBuilder.AppendFormat(options.ScheduleClassMessageTemplate,
-					@class.Number,
-					@class.StartTime,
-					@class.EndTime,
-					GetClassInfoMessage(@class.FirstClass),
-					@class.SecondClass != null ? options.ClassInfoSeparator : null,
-					@class.SecondClass != null ? GetClassInfoMessage(@class.SecondClass) : null,
-					i < scheduleDay.Classes.Count - 1 ? options.ScheduleClassSeparator : null);
-			}
-			return scheduleDayClassesBuilder.ToString();
-		}
-
-		private string GetClassInfoMessage(ClassInfo classInfo)
-			=> String.Format(options.ScheduleClassInfoMessageTemplate,
-				GetClassInfoField(classInfo.DisciplineName),
-				GetClassInfoField(classInfo.Teacher),
-				GetClassInfoField(classInfo.Classroom),
-				GetClassInfoField(classInfo.OnlineMeetingUrl),
-				classInfo.IsRemote ? options.IsRemoteClassMessage : null);
-
-		private string GetClassInfoField(string classInfoField)
-			=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
 
 	}
 

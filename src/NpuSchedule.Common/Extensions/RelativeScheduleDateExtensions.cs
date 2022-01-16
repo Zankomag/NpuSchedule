@@ -16,10 +16,13 @@ namespace NpuSchedule.Common.Extensions {
 		private static readonly TimeZoneInfo npuTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
 
 		private static DateTimeOffset GetCurrentDateTimeOffset()
-			=> TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, npuTimeZone);
+			=> ConvertToNpuTimeZone(DateTimeOffset.UtcNow);
 
 		private static DateTimeOffset AddDaysToDateTimeOffset(DateTimeOffset dateTimeOffset, double daysToAdd)
 			=> TimeZoneInfo.ConvertTime(dateTimeOffset.ToUniversalTime().AddDays(daysToAdd), npuTimeZone);
+
+		public static DateTimeOffset ConvertToNpuTimeZone(this DateTimeOffset dateTimeOffset)
+			=> TimeZoneInfo.ConvertTime(dateTimeOffset, npuTimeZone);
 
 		/// <summary>
 		///     Normally returns zero-range date (for example 14/11 - 14/11) but in cases of weekends adds them to range
