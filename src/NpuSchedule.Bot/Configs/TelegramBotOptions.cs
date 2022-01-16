@@ -18,6 +18,9 @@ namespace NpuSchedule.Bot.Configs {
 
 		private long[] allowedChatIds;
 
+		/// <summary>
+		/// Also includes <see cref="AdminIds"/> 
+		/// </summary>
 		public long[] AllowedChatIds {
 			get => allowedChatIds;
 			set => allowedChatIds = value.Concat(AdminIds).Distinct().ToArray();

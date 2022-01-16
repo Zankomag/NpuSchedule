@@ -45,7 +45,6 @@ namespace NpuSchedule.Bot.Services {
 			this.npuScheduleService = npuScheduleService;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
-			
 			botUsername = new Lazy<Task<string>>(async () => await InitializeBotUsername());
 			startTime = DateTime.UtcNow;
 		}
@@ -55,7 +54,7 @@ namespace NpuSchedule.Bot.Services {
 			return String.Concat('@', botInfo.Username);
 		}
 
-		async Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => await HandleUpdateAsync(update);
+		Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => HandleUpdateAsync(update);
 
 		public async Task HandleUpdateAsync(Update update) {
 			switch(update.Type) {
@@ -137,6 +136,48 @@ namespace NpuSchedule.Bot.Services {
 			if(message.From.Id != message.Chat.Id && botMentionIndex == -1)
 				return;
 
+			(string command, string arg) = SplitMessagePayload(message, botMentionIndex, spaceIndex);
+			
+			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
+			if(options.IsChatAllowed(message.Chat.Id)) {
+				switch(command.ToLower()) {
+					case "/today":
+						await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id, arg);
+						break;
+					case "/tomorrow":
+						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id, arg);
+						break;
+					case "/closest":
+						await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id, arg);
+						break;
+					case "/week":
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id, arg);
+						break;
+					case "/nextweek":
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id, arg);
+						break;
+					case "/health":
+					case "/version":
+					case "/status":
+						await client.SendTextMessageWithRetryAsync(message.From.Id, GetStatusMessage());
+						break;
+				}
+			}
+		}
+
+		private string GetStatusMessage() => $"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}"
+			+ $"\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}"
+			+ $"\ndotnet {Environment.Version}"
+			+ $"\nStart time: {startTime}";
+
+		/// <summary>
+		/// Splits message by command and single arg after command if exists
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="botMentionIndex">An index of @botUsername</param>
+		/// <param name="spaceIndex">A first appearance of space in message</param>
+		/// <returns></returns>
+		private static (string command, string arg) SplitMessagePayload(Message message, int botMentionIndex, int spaceIndex) {
 			//This implementation calculates only single arg (all text after command). To calculate arg list changes needed
 			(string command, string arg) = (botMentionIndex, spaceIndex) switch {
 				(-1, -1) => (message.Text, null),
@@ -144,44 +185,7 @@ namespace NpuSchedule.Bot.Services {
 				(-1, _) => (message.Text[..spaceIndex], message.Text[spaceIndex..]),
 				(_, _) => (message.Text[..botMentionIndex], message.Text[spaceIndex..])
 			};
-
-
-			//TODO refactor allowed chat:)
-			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
-			switch(command.ToLower()) {
-				case "/today":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id, arg);
-					}
-					break;
-				case "/tomorrow":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id, arg);
-					}
-					break;
-				case "/closest":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id, arg);
-					}
-					break;
-				case "/week":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id, arg);
-					}
-					break;
-				case "/nextweek":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id, arg);
-					}
-					break;
-				case "/health":
-				case "/version":
-					if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
-						await client.SendTextMessageWithRetryAsync(message.From.Id,
-							$"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
-					}
-					break;
-			}
+			return (command, arg);
 		}
 
 		private Task HandleInlineQueryAsync(InlineQuery inlineQuery) {
