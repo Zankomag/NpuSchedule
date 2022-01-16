@@ -1,5 +1,6 @@
-﻿using System.Threading.Tasks;
-using NpuSchedule.Common.Enums;
+﻿using System;
+using System.Threading.Tasks;
+using NpuSchedule.Core.Models;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 
@@ -11,8 +12,8 @@ namespace NpuSchedule.Bot.Abstractions {
 
 		bool IsTokenCorrect(string token);
 		
-		Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null);
-		Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null);
+		Task SendDayScheduleAsync(Schedule schedule, long chatId, DateTimeOffset startDate, DateTimeOffset endDate);
+		Task SendScheduleRangeAsync(Schedule schedule, long chatId, DateTimeOffset startDate, DateTimeOffset endDate);
 
 	}
 

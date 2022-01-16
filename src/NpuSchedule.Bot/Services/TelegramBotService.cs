@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Net.Http;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,8 +9,8 @@ using NpuSchedule.Bot.Configs;
 using NpuSchedule.Bot.Extensions;
 using NpuSchedule.Common.Enums;
 using NpuSchedule.Common.Extensions;
-using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Abstractions;
+using NpuSchedule.Core.Enums;
 using NpuSchedule.Core.Models;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
@@ -29,93 +26,34 @@ namespace NpuSchedule.Bot.Services {
 		private readonly ITelegramBotClient client;
 		private readonly ILogger<TelegramBotService> logger;
 		private readonly INpuScheduleService npuScheduleService;
-		private readonly DateTime startTime;
-
+		private readonly ITelegramBotUi botUi;
+		private readonly DateTimeOffset startTime;
 		private readonly TelegramBotOptions options;
-		private readonly string botUsername;
+		
+		/// <summary>
+		/// Bot username with @ in front
+		/// </summary>
+		private readonly Lazy<Task<string>> botUsername;
 
 		/// <inheritdoc />
 		public UpdateType[] AllowedUpdates { get; } = { UpdateType.Message, UpdateType.InlineQuery };
 
-		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger, INpuScheduleService npuScheduleService) {
+		public TelegramBotService(IOptions<TelegramBotOptions> telegramBotOptions, ILogger<TelegramBotService> logger, INpuScheduleService npuScheduleService, ITelegramBotUi botUi) {
 			this.logger = logger;
 			this.npuScheduleService = npuScheduleService;
+			this.botUi = botUi;
 			options = telegramBotOptions.Value;
 			client = new TelegramBotClient(options.Token);
-
-			//TODO workaround this so it won't block
-			botUsername = $"@{client.GetMeAsync().Result.Username}";
-			startTime = DateTime.UtcNow;
+			botUsername = new Lazy<Task<string>>(async () => await InitializeBotUsername());
+			startTime = DateTimeOffset.UtcNow.ConvertToNpuTimeZone();
 		}
 
-		public async Task HandleMessageAsync(Message message) {
-			//bot doesn't read old messages to avoid /*spam*/ 
-			//2 minutes threshold due to slow start of aws lambda
-			if(message.Date < startTime.AddMinutes(-2)) return;
-
-			//If command contains bot username we need to exclude it from command (/btc@MyBtcBot should be /btc)
-			int botMentionIndex = message.Text.IndexOf(botUsername, StringComparison.Ordinal);
-			int spaceIndex = message.Text.IndexOf(' ');
-
-			//There should not be spaces between @botUsername and /command (should be as /command@botUsername). Also space cannot be first char
-			if(botMentionIndex > spaceIndex || spaceIndex == 0)
-				return;
-
-			//Bot should not respond to commands in group chats without direct mention
-			if(message.From.Id != message.Chat.Id && botMentionIndex == -1)
-				return;
-
-			//This implementation calculates only single arg (all text after command). To calculate arg list changes needed
-			(string command, string arg) = (botMentionIndex, spaceIndex) switch {
-				(-1, -1) => (message.Text, null),
-				(_, -1) => (message.Text[..botMentionIndex], null),
-				(-1, _) => (message.Text[..spaceIndex], message.Text[spaceIndex..]),
-				(_, _) => (message.Text[..botMentionIndex], message.Text[spaceIndex..])
-			};
-
-
-			//TODO refactor allowed chat:)
-			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
-			switch(command.ToLower()) {
-				case "/today":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id, arg);
-					}
-					break;
-				case "/tomorrow":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id, arg);
-					}
-					break;
-				case "/closest":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id, arg);
-					}
-					break;
-				case "/week":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id, arg);
-					}
-					break;
-				case "/nextweek":
-					if(options.IsChatAllowed(message.Chat.Id)) {
-						await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id, arg);
-					}
-					break;
-				case "/health":
-				case "/version":
-					if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
-						await client.SendTextMessageAsync(message.From.Id,
-							$"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}\ndotnet {Environment.Version}\nstart time: {startTime}");
-					}
-					break;
-			}
+		private async Task<string> InitializeBotUsername() {
+			var botInfo = await client.GetMeAsync();
+			return String.Concat('@', botInfo.Username);
 		}
 
-		public Task HandleInlineQueryAsync(InlineQuery inlineQuery) => Task.CompletedTask;
-
-		/// <inheritdoc />
-		async Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => await HandleUpdateAsync(update);
+		Task IUpdateHandler.HandleUpdate(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken) => HandleUpdateAsync(update);
 
 		public async Task HandleUpdateAsync(Update update) {
 			switch(update.Type) {
@@ -139,17 +77,21 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
+		
+		private async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
+			(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
+			var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
+			await SendDayScheduleAsync(schedule, chatId, startDate, endDate);
+		}
 
 		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
+		public async Task SendDayScheduleAsync(Schedule schedule, long chatId, DateTimeOffset startDate, DateTimeOffset endDate) {
 			try {
 				string message;
-				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
-				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
-				if(schedule.ScheduleDays.Count == 1) {
-					message = GetSingleScheduleDayMessage(schedule.ScheduleDays[0], schedule.ScheduleDays[0].Date, schedule.GroupName);
+				if(schedule.ScheduleType == ScheduleType.Day) {
+					message = botUi.GetSingleScheduleDayMessage(schedule, endDate, schedule.GroupName);
 				} else {
-					message = GetScheduleWeekMessage(schedule, startDate, endDate);
+					message = botUi.GetScheduleWeekMessage(schedule, startDate, endDate);
 				}
 				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(HttpRequestException ex) {
@@ -165,74 +107,95 @@ namespace NpuSchedule.Bot.Services {
 			}
 		}
 
+		private async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+			(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
+			var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
+			await SendScheduleRangeAsync(schedule, chatId, startDate, endDate);
+		}
+
 		/// <inheritdoc />
-		public async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+		public async Task SendScheduleRangeAsync(Schedule schedule, long chatId, DateTimeOffset startDate, DateTimeOffset endDate) {
 			try {
-				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
-				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
-				string message = GetScheduleWeekMessage(schedule, startDate, endDate);
+				string message = botUi.GetScheduleWeekMessage(schedule, startDate, endDate);
 				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(Exception ex) {
 				logger.LogError(ex, "Received exception while sending single schedule message");
 			}
 		}
 
-		//TODO Move all message getters to Ui service
-		private string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
+		private async Task HandleMessageAsync(Message message) {
+			if(message is null) throw new ArgumentNullException(nameof(message));
 
-			string scheduleWeekDays;
-			if(schedule.ScheduleDays == null || schedule.ScheduleDays.Count == 0) {
-				scheduleWeekDays = options.NoClassesMessage;
-			} else {
-				StringBuilder scheduleDayClassesBuilder = new();
-				foreach(ScheduleDay scheduleDay in schedule.ScheduleDays) {
-					scheduleDayClassesBuilder.AppendFormat(options.ScheduleDayMessageTemplate,
-						scheduleDay.Date,
-						GetScheduleDayClassesMessage(scheduleDay),
-						options.ScheduleDaySeparator);
+			//bot doesn't read old messages to avoid /*spam*/ 
+			//2 minutes threshold due to slow start of aws lambda
+			if(message.Date < startTime.AddMinutes(-2)) return;
+
+			//If command contains bot username we need to exclude it from command (/btc@MyBtcBot should be /btc)
+			string username = await botUsername.Value;
+			int botMentionIndex = message.Text.IndexOf(username, StringComparison.Ordinal);
+			int spaceIndex = message.Text.IndexOf(' ');
+
+			//There should not be spaces between @botUsername and /command (should be as /command@botUsername). Also space cannot be first char
+			if((spaceIndex != -1 && botMentionIndex > spaceIndex) || spaceIndex == 0)
+				return;
+
+			//Bot should not respond to commands in group chats without direct mention
+			if(message.From.Id != message.Chat.Id && botMentionIndex == -1)
+				return;
+
+			(string command, string arg) = SplitMessagePayload(message, botMentionIndex, spaceIndex);
+			
+			//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
+			if(options.IsChatAllowed(message.Chat.Id)) {
+				switch(command.ToLower()) {
+					case "/today":
+						await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id, arg);
+						break;
+					case "/tomorrow":
+						await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id, arg);
+						break;
+					case "/closest":
+						await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id, arg);
+						break;
+					case "/week":
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id, arg);
+						break;
+					case "/nextweek":
+						await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id, arg);
+						break;
+					case "/health":
+					case "/version":
+					case "/status":
+						if(message.Chat.Id == message.From.Id && options.IsUserAdmin(message.From.Id)) {
+							await client.SendTextMessageWithRetryAsync(message.From.Id, botUi.GetStatusMessage(startTime));
+						}
+						break;
 				}
-				scheduleWeekDays = scheduleDayClassesBuilder.ToString();
 			}
-			return String.Format(options.ScheduleWeekMessageTemplate, startDate, endDate, schedule.GroupName, scheduleWeekDays);
 		}
 
-		private string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, DateTimeOffset date, string groupName) {
-
-			string scheduleDayClasses;
-			if(scheduleDay?.Classes?.Any() != true) {
-				scheduleDayClasses = options.NoClassesMessage;
-			} else {
-				scheduleDayClasses = GetScheduleDayClassesMessage(scheduleDay);
-			}
-			return String.Format(options.SingleScheduleDayMessageTemplate, date, groupName, scheduleDayClasses);
+		/// <summary>
+		/// Splits message by command and single arg after command if exists
+		/// </summary>
+		/// <param name="message"></param>
+		/// <param name="botMentionIndex">An index of @botUsername</param>
+		/// <param name="spaceIndex">A first appearance of space in message</param>
+		/// <returns></returns>
+		private static (string command, string arg) SplitMessagePayload(Message message, int botMentionIndex, int spaceIndex) {
+			//This implementation calculates only single arg (all text after command). To calculate arg list changes needed
+			(string command, string arg) = (botMentionIndex, spaceIndex) switch {
+				(-1, -1) => (message.Text, null),
+				(_, -1) => (message.Text[..botMentionIndex], null),
+				(-1, _) => (message.Text[..spaceIndex], message.Text[spaceIndex..]),
+				(_, _) => (message.Text[..botMentionIndex], message.Text[spaceIndex..])
+			};
+			return (command, arg);
 		}
 
-		private string GetScheduleDayClassesMessage(ScheduleDay scheduleDay) {
-			StringBuilder scheduleDayClassesBuilder = new();
-			for(int i = 0; i < scheduleDay.Classes.Count; i++) {
-				var @class = scheduleDay.Classes[i];
-				scheduleDayClassesBuilder.AppendFormat(options.ScheduleClassMessageTemplate,
-					@class.Number,
-					@class.StartTime,
-					@class.EndTime,
-					GetClassInfoMessage(@class.FirstClass),
-					@class.SecondClass != null ? options.ClassInfoSeparator : null,
-					@class.SecondClass != null ? GetClassInfoMessage(@class.SecondClass) : null,
-					i < scheduleDay.Classes.Count - 1 ? options.ScheduleClassSeparator : null);
-			}
-			return scheduleDayClassesBuilder.ToString();
+		private Task HandleInlineQueryAsync(InlineQuery inlineQuery) {
+			if(inlineQuery is null) throw new ArgumentNullException(nameof(inlineQuery));
+			return Task.CompletedTask;
 		}
-
-		private string GetClassInfoMessage(ClassInfo classInfo)
-			=> String.Format(options.ScheduleClassInfoMessageTemplate,
-				GetClassInfoField(classInfo.DisciplineName),
-				GetClassInfoField(classInfo.Teacher),
-				GetClassInfoField(classInfo.Classroom),
-				GetClassInfoField(classInfo.OnlineMeetingUrl),
-				classInfo.IsRemote ? options.IsRemoteClassMessage : null);
-
-		private string GetClassInfoField(string classInfoField)
-			=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
 
 	}
 

@@ -14,6 +14,7 @@ namespace NpuSchedule.Bot.Extensions {
 		public static IServiceCollection AddTelegramBotServices(this IServiceCollection services, IConfiguration configuration) {
 			services.AddOptions<TelegramBotOptions>(configuration, TelegramBotOptions.SectionName);
 			services.AddSingleton<ITelegramBotService, TelegramBotService>();
+			services.AddSingleton<ITelegramBotUi, TelegramBotUi>();
 			return services;
 		}
 
