@@ -16,10 +16,10 @@ namespace NpuSchedule.Bot.Services {
 
 		public TelegramBotUi(IOptions<TelegramBotOptions> options) => this.options = options.Value;
 
-		public string GetStatusMessage(DateTimeOffset startTime) => $"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}"
+		public string GetStatusMessage(DateTimeOffset? startTime = null) => $"Version: {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion}"
 			+ $"\nEnvironment: {EnvironmentWrapper.GetEnvironmentName()}"
 			+ $"\ndotnet {Environment.Version}"
-			+ $"\nStart time: {startTime:dd/MM/yyyy HH:mm:ss zz}";
+			+ (startTime != null ? $"\nStart time: {startTime:dd/MM/yyyy HH:mm:ss zz}" : null);
 
 		public string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
 
@@ -38,15 +38,18 @@ namespace NpuSchedule.Bot.Services {
 			return String.Format(options.ScheduleWeekMessageTemplate, startDate, endDate, schedule.GroupName, scheduleWeekDays);
 		}
 
-		public string GetSingleScheduleDayMessage(ScheduleDay scheduleDay, DateTimeOffset date, string groupName) {
-
+		public string GetSingleScheduleDayMessage(Schedule schedule, DateTimeOffset rangeEndDate, string groupName) {
+			if(schedule is null) throw new ArgumentNullException(nameof(schedule));
+			if(schedule.ScheduleDays is null) throw new ArgumentNullException(nameof(schedule) + "." + nameof(schedule.ScheduleDays));
+			
+			var scheduleDay = schedule.ScheduleDays.FirstOrDefault();
 			string scheduleDayClasses;
 			if(scheduleDay?.Classes?.Any() != true) {
 				scheduleDayClasses = options.NoClassesMessage;
 			} else {
 				scheduleDayClasses = GetScheduleDayClassesMessage(scheduleDay);
 			}
-			return String.Format(options.SingleScheduleDayMessageTemplate, date, groupName, scheduleDayClasses);
+			return String.Format(options.SingleScheduleDayMessageTemplate, scheduleDay?.Date ?? rangeEndDate, groupName, scheduleDayClasses);
 		}
 
 		private string GetScheduleDayClassesMessage(ScheduleDay scheduleDay) {

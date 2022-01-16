@@ -10,6 +10,7 @@ using NpuSchedule.Bot.Extensions;
 using NpuSchedule.Common.Enums;
 using NpuSchedule.Common.Extensions;
 using NpuSchedule.Core.Abstractions;
+using NpuSchedule.Core.Enums;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -82,8 +83,8 @@ namespace NpuSchedule.Bot.Services {
 				string message;
 				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
 				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
-				if(schedule.ScheduleDays.Count == 1) {
-					message = botUi.GetSingleScheduleDayMessage(schedule.ScheduleDays[0], schedule.ScheduleDays[0].Date, schedule.GroupName);
+				if(schedule.ScheduleType == ScheduleType.Day) {
+					message = botUi.GetSingleScheduleDayMessage(schedule, endDate, schedule.GroupName);
 				} else {
 					message = botUi.GetScheduleWeekMessage(schedule, startDate, endDate);
 				}

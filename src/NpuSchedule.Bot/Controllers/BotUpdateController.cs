@@ -10,8 +10,12 @@ namespace NpuSchedule.Bot.Controllers {
 	public class BotUpdateController : ControllerBase {
 
 		private readonly ITelegramBotService telegramBotService;
+		private readonly ITelegramBotUi telegramBotUi;
 
-		public BotUpdateController(ITelegramBotService telegramBotService) => this.telegramBotService = telegramBotService;
+		public BotUpdateController(ITelegramBotService telegramBotService, ITelegramBotUi telegramBotUi) {
+			this.telegramBotService = telegramBotService;
+			this.telegramBotUi = telegramBotUi;
+		}
 
 		[HttpPost("{token}")]
 		public async Task<IActionResult> PostUpdate([FromBody] Update update, string token) {
@@ -20,9 +24,10 @@ namespace NpuSchedule.Bot.Controllers {
 			}
 			return Ok();
 		}
-
+		
+		[HttpGet("status")]
 		[HttpGet("healthCheck")]
-		public string HealthCheck() => EnvironmentWrapper.GetEnvironmentName();
+		public string HealthCheck() => telegramBotUi.GetStatusMessage();
 
 	}
 
