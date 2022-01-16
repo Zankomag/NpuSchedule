@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using NpuSchedule.Bot.Abstractions;
-using NpuSchedule.Common.Utils;
 using Telegram.Bot.Types;
 
 namespace NpuSchedule.Bot.Controllers {

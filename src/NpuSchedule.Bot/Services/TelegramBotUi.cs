@@ -40,7 +40,7 @@ namespace NpuSchedule.Bot.Services {
 
 		public string GetSingleScheduleDayMessage(Schedule schedule, DateTimeOffset rangeEndDate, string groupName) {
 			if(schedule is null) throw new ArgumentNullException(nameof(schedule));
-			if(schedule.ScheduleDays is null) throw new ArgumentNullException(nameof(schedule) + "." + nameof(schedule.ScheduleDays));
+			if(schedule.ScheduleDays is null) throw new ArgumentException("ScheduleDays is null but must not", nameof(schedule));
 			
 			var scheduleDay = schedule.ScheduleDays.FirstOrDefault();
 			string scheduleDayClasses;

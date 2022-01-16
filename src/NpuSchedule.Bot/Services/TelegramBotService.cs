@@ -11,6 +11,7 @@ using NpuSchedule.Common.Enums;
 using NpuSchedule.Common.Extensions;
 using NpuSchedule.Core.Abstractions;
 using NpuSchedule.Core.Enums;
+using NpuSchedule.Core.Models;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -76,13 +77,17 @@ namespace NpuSchedule.Bot.Services {
 		}
 
 		public bool IsTokenCorrect(string token) => token != null && token == options.Token;
+		
+		private async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
+			(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
+			var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
+			await SendDayScheduleAsync(schedule, chatId, startDate, endDate);
+		}
 
 		/// <inheritdoc />
-		public async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
+		public async Task SendDayScheduleAsync(Schedule schedule, long chatId, DateTimeOffset startDate, DateTimeOffset endDate) {
 			try {
 				string message;
-				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
-				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
 				if(schedule.ScheduleType == ScheduleType.Day) {
 					message = botUi.GetSingleScheduleDayMessage(schedule, endDate, schedule.GroupName);
 				} else {
@@ -102,11 +107,15 @@ namespace NpuSchedule.Bot.Services {
 			}
 		}
 
+		private async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+			(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
+			var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
+			await SendScheduleRangeAsync(schedule, chatId, startDate, endDate);
+		}
+
 		/// <inheritdoc />
-		public async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+		public async Task SendScheduleRangeAsync(Schedule schedule, long chatId, DateTimeOffset startDate, DateTimeOffset endDate) {
 			try {
-				(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
-				var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
 				string message = botUi.GetScheduleWeekMessage(schedule, startDate, endDate);
 				await client.SendTextMessageWithRetryAsync(chatId, message, ParseMode.Markdown, disableWebPagePreview: true);
 			} catch(Exception ex) {
