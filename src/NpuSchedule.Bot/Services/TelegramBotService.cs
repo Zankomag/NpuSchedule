@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Net.Http;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -12,9 +9,7 @@ using NpuSchedule.Bot.Configs;
 using NpuSchedule.Bot.Extensions;
 using NpuSchedule.Common.Enums;
 using NpuSchedule.Common.Extensions;
-using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Abstractions;
-using NpuSchedule.Core.Models;
 using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
