@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace NpuSchedule.Common.Attributes {
 
 	/// <summary>
-	///     Validates if a template for String.Format contain required quantity of variable placeholders ({0}, {1} etc.)
+	///     Validates if a template for String.Format contains required quantity of variable placeholders ({0}, {1} etc.)
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 	public class FormatStringPlaceholderIndexesCountAttribute : ValidationAttribute {
@@ -63,11 +63,11 @@ namespace NpuSchedule.Common.Attributes {
 			foreach(var substring in GetUnmatchedRegexSubstrings(format, matches)) {
 				var doubleBraceMatches = doubleCurlyBracesRegex.Matches(substring);
 				if(doubleBraceMatches.Count != 0) {
-					if(GetUnmatchedRegexSubstrings(substring, doubleBraceMatches).Any(DoesStringContainCurlyBraces)) {
+					if(GetUnmatchedRegexSubstrings(substring, doubleBraceMatches).Any(StringContainsCurlyBraces)) {
 						return new ValidationResult(String.Format(validationErrorFormat, propertyName));
 					}
 				} else {
-					if(DoesStringContainCurlyBraces(substring)) {
+					if(StringContainsCurlyBraces(substring)) {
 						return new ValidationResult(String.Format(validationErrorFormat, propertyName));
 					}
 				}
@@ -75,7 +75,7 @@ namespace NpuSchedule.Common.Attributes {
 			return ValidationResult.Success;
 		}
 
-		private static bool DoesStringContainCurlyBraces(string @string) => @string.Any(x => x is '{' or '}');
+		private static bool StringContainsCurlyBraces(string @string) => @string.Any(x => x is '{' or '}');
 
 		private static IEnumerable<string> GetUnmatchedRegexSubstrings(string format, MatchCollection matches) {
 			if(matches.Count != 0) {
