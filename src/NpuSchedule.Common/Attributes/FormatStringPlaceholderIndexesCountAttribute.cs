@@ -25,7 +25,7 @@ namespace NpuSchedule.Common.Attributes {
 		/// <inheritdoc />
 		public FormatStringPlaceholderIndexesCountAttribute(int placeholderIndexesCount, [CallerMemberName] string propertyName = "property") {
 			if(placeholderIndexesCount < 0)
-				throw new ArgumentException("value must be greater or equal to 0", nameof(placeholderIndexesCount));
+				throw new ArgumentException("Value must be greater or equal to 0", nameof(placeholderIndexesCount));
 			this.placeholderIndexesCount = placeholderIndexesCount;
 			this.propertyName = propertyName;
 		}

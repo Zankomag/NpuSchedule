@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AngleSharp;
@@ -108,14 +109,11 @@ namespace NpuSchedule.Core.Services {
 				logger.LogError(ex, "Exception thrown when parsing date");
 				throw;
 			}
-
-			var classes = new List<Class>();
+			
 			var rawClasses = rawDay.QuerySelectorAll("tr");
-
-			foreach(IElement t in rawClasses) {
-				if(t.InnerHtml.Contains("class=\"link\""))
-					classes.Add(ParseClass(t));
-			}
+			var classes = rawClasses.Where(x => x.InnerHtml.Contains("class=\"link\""))
+				.Select(ParseClass)
+				.ToList();
 
 			return new ScheduleDay { Date = date, Classes = classes };
 		}
