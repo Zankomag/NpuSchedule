@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using NpuSchedule.Bot.Abstractions;
 using NpuSchedule.Core.Enums;
@@ -18,8 +19,10 @@ namespace NpuSchedule.Bot.Controllers {
 			if(telegramBotService.IsTokenCorrect(token)) {
 				if(schedule.ScheduleType == ScheduleType.Day) {
 					//await telegramBotService.SendDayScheduleAsync(schedule);
+					throw new NotImplementedException();
 				} else {
 					//await telegramBotService.SendScheduleRangeAsync(schedule);
+					throw new NotImplementedException();
 				}
 			}
 			return Ok();

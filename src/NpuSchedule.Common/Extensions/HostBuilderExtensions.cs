@@ -36,7 +36,7 @@ namespace NpuSchedule.Common.Extensions {
 
 		/// <summary>
 		/// Sets Hosting Environment
-		/// Adds config from appsettings.json and appsettings.Environment.json files
+		/// Adds config from appsettings.json and appsettings.{{EnvironmentName}}.json files
 		/// Loads User Secrets if Development
 		/// </summary>
 		/// <param name="hostBuilder"></param>
