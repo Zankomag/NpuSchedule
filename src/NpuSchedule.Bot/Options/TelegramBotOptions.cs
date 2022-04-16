@@ -1,11 +1,8 @@
-﻿
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using NpuSchedule.Common.Attributes;
 
-namespace NpuSchedule.Bot.Configs {
+namespace NpuSchedule.Bot.Options {
 
 	public class TelegramBotOptions {
 

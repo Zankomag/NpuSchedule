@@ -1,8 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-
-namespace NpuSchedule.Core.Configs {
+namespace NpuSchedule.Core.Options {
 
 	public class NmuScheduleOptions {
 

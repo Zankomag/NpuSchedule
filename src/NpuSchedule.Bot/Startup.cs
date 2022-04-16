@@ -16,7 +16,7 @@ namespace NpuSchedule.Bot {
 		public Startup(IConfiguration configuration) : base(configuration) { }
 
 		public override void ConfigureServices(IServiceCollection services) {
-			services.AddNpuScheduleServiceServices(Configuration);
+			services.AddNpuScheduleServices(Configuration);
 			services.AddTelegramBotServices(Configuration);
 			services.AddLogging(x => x.AddConsole());
 			services.AddControllers()

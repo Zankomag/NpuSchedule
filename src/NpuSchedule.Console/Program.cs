@@ -15,7 +15,7 @@ var host = new HostBuilder()
 	.AddConfiguration()
 	.ConfigureServices((context, services) => {
 		services.AddLogging(logging => logging.AddConsole());
-		services.AddNpuScheduleServiceServices(context.Configuration);
+		services.AddNpuScheduleServices(context.Configuration);
 	})
 	.Build();
 

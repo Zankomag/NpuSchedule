@@ -20,9 +20,7 @@ namespace NpuSchedule.Common.Attributes {
 		private static readonly Regex doubleCurlyBracesRegex = new(@"(({{)|(}}))+");
 		private readonly int placeholderIndexesCount;
 		private readonly string propertyName;
-
-
-		/// <inheritdoc />
+		
 		public FormatStringPlaceholderIndexesCountAttribute(int placeholderIndexesCount, [CallerMemberName] string propertyName = "property") {
 			if(placeholderIndexesCount < 0)
 				throw new ArgumentException("Value must be greater or equal to 0", nameof(placeholderIndexesCount));

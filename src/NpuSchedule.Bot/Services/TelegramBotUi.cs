@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Bot.Abstractions;
-using NpuSchedule.Bot.Configs;
+using NpuSchedule.Bot.Options;
 using NpuSchedule.Common.Utils;
 using NpuSchedule.Core.Models;
 

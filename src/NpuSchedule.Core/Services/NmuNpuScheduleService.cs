@@ -9,9 +9,9 @@ using AngleSharp.Dom;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Core.Abstractions;
-using NpuSchedule.Core.Configs;
 using NpuSchedule.Core.Extensions;
 using NpuSchedule.Core.Models;
+using NpuSchedule.Core.Options;
 
 namespace NpuSchedule.Core.Services {
 
