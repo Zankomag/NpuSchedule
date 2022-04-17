@@ -24,7 +24,7 @@ public class TelegramBotUi : ITelegramBotUi {
 	public string GetScheduleWeekMessage(Schedule schedule, DateTimeOffset startDate, DateTimeOffset endDate) {
 
 		string scheduleWeekDays;
-		if(schedule.ScheduleDays == null || schedule.ScheduleDays.Count == 0) {
+		if(schedule.ScheduleDays.Count == 0) {
 			scheduleWeekDays = options.NoClassesMessage;
 		} else {
 			StringBuilder scheduleDayClassesBuilder = new();
@@ -44,7 +44,7 @@ public class TelegramBotUi : ITelegramBotUi {
 			
 		var scheduleDay = schedule.ScheduleDays.FirstOrDefault();
 		string scheduleDayClasses;
-		if(scheduleDay?.Classes?.Any() != true) {
+		if(scheduleDay?.Classes.Any() != true) {
 			scheduleDayClasses = options.NoClassesMessage;
 		} else {
 			scheduleDayClasses = GetScheduleDayClassesMessage(scheduleDay);
@@ -76,7 +76,7 @@ public class TelegramBotUi : ITelegramBotUi {
 			GetClassInfoField(classInfo.OnlineMeetingUrl),
 			classInfo.IsRemote ? options.IsRemoteClassMessage : null);
 
-	private string GetClassInfoField(string classInfoField)
-		=> classInfoField != null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
+	private string? GetClassInfoField(string? classInfoField)
+		=> classInfoField is not null ? String.Format(options.ScheduleClassInfoFieldTemplate, classInfoField) : null;
 
 }

@@ -28,7 +28,7 @@ public class FormatStringPlaceholderIndexesCountAttribute : ValidationAttribute 
 		this.propertyName = propertyName;
 	}
 		
-	protected override ValidationResult IsValid(object value, ValidationContext validationContext) {
+	protected override ValidationResult? IsValid(object? value, ValidationContext validationContext) {
 		if(value is not string format)
 			return ValidationResult.Success;
 
@@ -56,7 +56,7 @@ public class FormatStringPlaceholderIndexesCountAttribute : ValidationAttribute 
 	/// <summary>
 	///     Checks if unmatched to regex substrings contain curvy braces that are unescaped and are not a part of a placeholder
 	/// </summary>
-	private ValidationResult AreUnmatchedSubstringsValid(string format, MatchCollection matches) {
+	private ValidationResult? AreUnmatchedSubstringsValid(string format, MatchCollection matches) {
 		const string validationErrorFormat = @"{0} contains {{ or }} that are not a part of a placeholder and are not escaped";
 		foreach(var substring in GetUnmatchedRegexSubstrings(format, matches)) {
 			var doubleBraceMatches = doubleCurlyBracesRegex.Matches(substring);

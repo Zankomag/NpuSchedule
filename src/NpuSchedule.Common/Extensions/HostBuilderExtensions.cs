@@ -26,7 +26,7 @@ public static class HostBuilderExtensions {
 	/// <returns>The same instance of the <see cref="IHostBuilder" /> for chaining.</returns>
 	public static IHostBuilder UseStartup<TStartup>(this IHostBuilder hostBuilder) where TStartup : IStartup {
 		hostBuilder.ConfigureServices((context, serviceCollection) => {
-			var startup = (TStartup)Activator.CreateInstance(typeof(TStartup), context.Configuration);
+			IStartup startup = (TStartup)Activator.CreateInstance(typeof(TStartup), context.Configuration)!;
 			Debug.Assert(startup != null, nameof(startup) + " is null");
 			startup.ConfigureServices(serviceCollection);
 		});

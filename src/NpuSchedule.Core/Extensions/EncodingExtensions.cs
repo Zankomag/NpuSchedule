@@ -5,7 +5,7 @@ namespace NpuSchedule.Core.Extensions;
 
 public static class EncodingExtensions {
 
-	private static Encoding windows1251Encoding;
+	private static Encoding? windows1251Encoding;
 
 	private static Encoding Windows1251Encoding {
 		get {

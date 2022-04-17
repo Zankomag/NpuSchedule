@@ -26,6 +26,10 @@ public class NmuNpuScheduleService : INpuScheduleService {
 	private readonly ILogger<NmuNpuScheduleService> logger;
 	private readonly IBrowsingContext browsingContext;
 	private readonly HttpClient nmuClient;
+	
+	//n=700 should be as url parameter, otherwise it doesn't work
+	const string scheduleRequestUri = @"cgi-bin/timetable.cgi?n=700";
+	private readonly Uri fullScheduleRequestUri;
 
 	public NmuNpuScheduleService(IOptions<NmuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger,
 		IBrowsingContext browsingContext, IHttpClientFactory httpClientFactory) {
@@ -35,31 +39,26 @@ public class NmuNpuScheduleService : INpuScheduleService {
 
 		nmuClient = httpClientFactory.CreateClient();
 		nmuClient.BaseAddress = new Uri(this.options.NmuAddress);
+		fullScheduleRequestUri = new Uri(nmuClient.BaseAddress, scheduleRequestUri);
 	}
 
 	/// <inheritdoc />
-	public async Task<Schedule> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null, int maxScheduleDaysCount = Int32.MaxValue) {
+	public async Task<Schedule> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string? groupName = null, int maxScheduleDaysCount = Int32.MaxValue) {
 		groupName ??= options.DefaultGroupName;
 		if(String.IsNullOrWhiteSpace(groupName)) throw new ArgumentException("Parameter must not be null or whitespace", nameof(groupName));
 		string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
 		var scheduleDays = await ParseRangeSchedule(rawHtml, maxScheduleDaysCount);
 
-		return new Schedule {
-			GroupName = groupName,
-			ScheduleDays = scheduleDays
-		};
+		return new Schedule(groupName, scheduleDays);
 	}
 
-	private async Task<string> GetRawHtmlScheduleResponse(DateTimeOffset startDate, DateTimeOffset endDate, string groupName = null) {
+	private async Task<string> GetRawHtmlScheduleResponse(DateTimeOffset startDate, DateTimeOffset endDate, string groupName) {
 		var content = new Dictionary<string, string> {
 			{ "sdate", startDate.ToString("dd.MM.yyyy") },
 			{ "edate", endDate.ToString("dd.MM.yyyy") },
 			{ "group", groupName }
 		};
 		var contentBytes = content.GetUrlEncodedContent().ToWindows1251();
-
-		//n=700 should be as url parameter, otherwise it doesn't work
-		const string scheduleRequestUri = @"cgi-bin/timetable.cgi?n=700";
 
 		string rawHtml;
 
@@ -72,10 +71,10 @@ public class NmuNpuScheduleService : INpuScheduleService {
 				throw new HttpRequestException($"Response status code does not indicate success: {response.StatusCode}");
 			}
 		} catch(HttpRequestException ex) {
-			logger.LogError(ex, "Exception thrown during request to {Uri}", new Uri(nmuClient.BaseAddress!, scheduleRequestUri));
+			logger.LogError(ex, "Exception thrown during request to {Uri}", fullScheduleRequestUri);
 			throw;
 		} catch(TaskCanceledException ex) {
-			logger.LogError(ex, "Exception thrown during request to {Uri}: Site response timed out", new Uri(nmuClient.BaseAddress!, scheduleRequestUri));
+			logger.LogError(ex, "Exception thrown during request to {Uri}: Site response timed out", fullScheduleRequestUri);
 			throw;
 		} catch(Exception ex) {
 			logger.LogError(ex, "Unhandled exception thrown while handling web response");
@@ -109,18 +108,18 @@ public class NmuNpuScheduleService : INpuScheduleService {
 			logger.LogError(ex, "Exception thrown when parsing date");
 			throw;
 		}
-			
+
 		var rawClasses = rawDay.QuerySelectorAll("tr");
 		var classes = rawClasses.Where(x => x.InnerHtml.Contains("class=\"link\""))
 			.Select(ParseClass)
 			.ToList();
 
-		return new ScheduleDay { Date = date, Classes = classes };
+		return new ScheduleDay(date, classes);
 	}
 
 	private Class ParseClass(IElement rawClass) {
-		ClassInfo firstClass = null;
-		ClassInfo secondClass = null;
+		ClassInfo firstClass;
+		ClassInfo? secondClass = null;
 		int numberClass;
 		try {
 			numberClass = Int32.Parse(rawClass.QuerySelector("td:nth-child(1)")?.TextContent!);
@@ -130,14 +129,15 @@ public class NmuNpuScheduleService : INpuScheduleService {
 		}
 
 		const int indexOfEndTime = 5;
-		string timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, classFieldsSeparator);
-		var rawStartAndEndTime = timeClass?.Split(classFieldsSeparator);
+		string? timeClass = rawClass.QuerySelector("td:nth-child(2)")?.TextContent.Insert(indexOfEndTime, classFieldsSeparator);
+		var rawStartAndEndTime = timeClass?.Split(classFieldsSeparator) 
+			?? throw new InvalidOperationException("Unable to retrieve class Start and End time from schedule html");
 		TimeSpan startTime;
 		TimeSpan endTime;
 
 		try {
-			startTime = TimeSpan.Parse(rawStartAndEndTime![0]);
-			endTime = TimeSpan.Parse(rawStartAndEndTime![1]);
+			startTime = TimeSpan.Parse(rawStartAndEndTime[0]);
+			endTime = TimeSpan.Parse(rawStartAndEndTime[1]);
 		} catch(Exception ex) {
 			logger.LogError(ex, "Exception thrown when parsing StartAndEnd class time");
 			throw;
@@ -147,31 +147,39 @@ public class NmuNpuScheduleService : INpuScheduleService {
 
 		switch(countClassInfo) {
 			case 1:
-				firstClass = ParseClassInfo(rawClass.QuerySelector("td:nth-child(3)"));
+				IElement firstClassElement = rawClass.QuerySelector("td:nth-child(3)")
+					?? throw new InvalidOperationException("Unable to retrieve first class from schedule html");
+				firstClass = ParseClassInfo(firstClassElement);
 				break;
 			case > 1: {
-				var classInfo = rawClass.QuerySelector("td:nth-child(3)");
+				IElement classInfoElement = rawClass.QuerySelector("td:nth-child(3)")
+					?? throw new InvalidOperationException("Unable to retrieve ClassInfo from schedule html");
 
-				if(classInfo != null) {
-					const string endFirstClass = "</div> ";
-					string tmp = classInfo.InnerHtml;
-					var startIndex = classInfo.InnerHtml.IndexOf(endFirstClass, StringComparison.Ordinal);
+				const string endFirstClass = "</div> ";
+				string tmp = classInfoElement.InnerHtml;
+				var startIndex = classInfoElement.InnerHtml.IndexOf(endFirstClass, StringComparison.Ordinal);
 
-					// remove second
-					if(startIndex != -1)
-						classInfo.InnerHtml = classInfo.InnerHtml[..(startIndex + endFirstClass.Length)];
-					firstClass = ParseClassInfo(classInfo);
+				// remove second
+				if(startIndex != -1)
+					classInfoElement.InnerHtml = classInfoElement.InnerHtml[..(startIndex + endFirstClass.Length)];
+				firstClass = ParseClassInfo(classInfoElement);
 
-					// remove first and adaptation second classInfo for parser
-					if(startIndex != -1)
-						classInfo.InnerHtml = tmp[(startIndex + "</div> <br>".Length)..].Replace("  <div", "<br> <div");
-					secondClass = ParseClassInfo(classInfo);
-				}
+
+				// remove first and adaptation second classInfo for parser
+				if(startIndex != -1)
+					classInfoElement.InnerHtml = tmp[(startIndex + "</div> <br>".Length)..].Replace("  <div", "<br> <div");
+				secondClass = ParseClassInfo(classInfoElement);
+
 				break;
 			}
+			default: throw new InvalidOperationException("Unable to retrieve ClassInfo from schedule html");
 		}
 
-		return new Class { StartTime = startTime, EndTime = endTime, Number = numberClass, FirstClass = firstClass, SecondClass = secondClass };
+		return new Class(numberClass,
+			startTime: startTime,
+			endTime: endTime,
+			firstClass: firstClass,
+			secondClass: secondClass);
 	}
 
 	private ClassInfo ParseClassInfo(IElement classInfoObj) {
@@ -190,8 +198,8 @@ public class NmuNpuScheduleService : INpuScheduleService {
 		}
 
 		var discipline = classInfoObj.ChildNodes[0].TextContent.Trim();
-		string classroom = null;
-		string teacher = null;
+		string? classroom = null;
+		string? teacher = null;
 
 		var childIndex = classInfoObj.ChildNodes.Length switch {
 			9 => 4, // second string is data mixed group
@@ -216,10 +224,7 @@ public class NmuNpuScheduleService : INpuScheduleService {
 			}
 		}
 
-		return new ClassInfo {
-			DisciplineName = discipline, Teacher = teacher, Classroom = classroom,
-			OnlineMeetingUrl = meetUrl, IsRemote = isRemote
-		};
+		return new ClassInfo(discipline, teacher, classroom, meetUrl, isRemote);
 	}
 
 }

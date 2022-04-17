@@ -16,7 +16,7 @@ public sealed class OptionsValidator<TOptions> : IValidateOptions<TOptions> wher
 			return ValidateOptionsResult.Success;
 		}
 
-		IEnumerable<string> validationFailures = validationResults.Select(validationResult => validationResult.ErrorMessage);
+		IEnumerable<string?> validationFailures = validationResults.Select(validationResult => validationResult.ErrorMessage);
 
 		return ValidateOptionsResult.Fail(validationFailures);
 	}

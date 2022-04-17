@@ -76,9 +76,9 @@ public class TelegramBotService : ITelegramBotService {
 		return Task.CompletedTask;
 	}
 
-	public bool IsTokenCorrect(string token) => token != null && token == options.Token;
+	public bool IsTokenCorrect(string token) => token == options.Token;
 		
-	private async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string groupName = null) {
+	private async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string? groupName = null) {
 		(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
 		var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
 		await SendDayScheduleAsync(schedule, chatId, startDate, endDate);
@@ -107,7 +107,7 @@ public class TelegramBotService : ITelegramBotService {
 		}
 	}
 
-	private async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string groupName = null) {
+	private async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string? groupName = null) {
 		(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
 		var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
 		await SendScheduleRangeAsync(schedule, chatId, startDate, endDate);
@@ -143,25 +143,25 @@ public class TelegramBotService : ITelegramBotService {
 		if(message.From.Id != message.Chat.Id && botMentionIndex == -1)
 			return;
 
-		(string command, string arg) = SplitMessagePayload(message, botMentionIndex, spaceIndex);
+		(string command, string? groupName) = SplitMessagePayload(message, botMentionIndex, spaceIndex);
 			
 		//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
 		if(options.IsChatAllowed(message.Chat.Id)) {
 			switch(command.ToLower()) {
 				case "/today":
-					await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id, arg);
+					await SendDayScheduleAsync(RelativeScheduleDay.Today, message.Chat.Id, groupName);
 					break;
 				case "/tomorrow":
-					await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id, arg);
+					await SendDayScheduleAsync(RelativeScheduleDay.Tomorrow, message.Chat.Id, groupName);
 					break;
 				case "/closest":
-					await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id, arg);
+					await SendDayScheduleAsync(RelativeScheduleDay.Closest, message.Chat.Id, groupName);
 					break;
 				case "/week":
-					await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id, arg);
+					await SendScheduleRangeAsync(RelativeScheduleWeek.Current, message.Chat.Id, groupName);
 					break;
 				case "/nextweek":
-					await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id, arg);
+					await SendScheduleRangeAsync(RelativeScheduleWeek.Next, message.Chat.Id, groupName);
 					break;
 				case "/health":
 				case "/version":
@@ -181,9 +181,9 @@ public class TelegramBotService : ITelegramBotService {
 	/// <param name="botMentionIndex">An index of @botUsername</param>
 	/// <param name="spaceIndex">A first appearance of space in message</param>
 	/// <returns></returns>
-	private static (string command, string arg) SplitMessagePayload(Message message, int botMentionIndex, int spaceIndex) {
+	private static (string command, string? arg) SplitMessagePayload(Message message, int botMentionIndex, int spaceIndex) {
 		//This implementation calculates only single arg (all text after command). To calculate arg list changes needed
-		(string command, string arg) = (botMentionIndex, spaceIndex) switch {
+		(string command, string? arg) = (botMentionIndex, spaceIndex) switch {
 			(-1, -1) => (message.Text, null),
 			(_, -1) => (message.Text[..botMentionIndex], null),
 			(-1, _) => (message.Text[..spaceIndex], message.Text[spaceIndex..]),

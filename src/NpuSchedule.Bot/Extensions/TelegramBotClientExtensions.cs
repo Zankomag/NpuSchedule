@@ -20,11 +20,10 @@ public static class TelegramBotClientExtensions {
 	/// <summary>
 	///     Adds retry logic for some cases of unsuccessful messages sent
 	/// </summary>
-	[SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
-	[SuppressMessage("ReSharper", "FunctionComplexityOverflow")]
-	public static async Task<IList<Message>> SendTextMessageWithRetryAsync(this ITelegramBotClient client, ChatId chatId, string text, ParseMode parseMode = default, IEnumerable<MessageEntity> entities = default,
+	[SuppressMessage("ReSharper", "PossibleMultipleEnumeration"), SuppressMessage("ReSharper", "FunctionComplexityOverflow")]
+	public static async Task<IList<Message>> SendTextMessageWithRetryAsync(this ITelegramBotClient client, ChatId chatId, string text, ParseMode parseMode = default, IEnumerable<MessageEntity>? entities = default,
 		bool disableWebPagePreview = default, bool disableNotification = default, int replyToMessageId = default, bool allowSendingWithoutReply = default,
-		IReplyMarkup replyMarkup = default, CancellationToken cancellationToken = default) {
+		IReplyMarkup? replyMarkup = default, CancellationToken cancellationToken = default) {
 
 		try {
 			//Messages with a markup are not checked by length because actual length of message after processing entities by telegram will be much less
@@ -54,9 +53,9 @@ public static class TelegramBotClientExtensions {
 	}
 
 	[SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
-	public static async Task<IList<Message>> SendMessageSplitByLimitParts(this ITelegramBotClient client, bool sendWarning, ChatId chatId, string text, IEnumerable<MessageEntity> entities,
+	public static async Task<IList<Message>> SendMessageSplitByLimitParts(this ITelegramBotClient client, bool sendWarning, ChatId chatId, string text, IEnumerable<MessageEntity>? entities,
 		bool disableWebPagePreview, bool disableNotification, int replyToMessageId, bool allowSendingWithoutReply,
-		IReplyMarkup replyMarkup, CancellationToken cancellationToken) {
+		IReplyMarkup? replyMarkup, CancellationToken cancellationToken) {
 
 		List<Message> sentMessages = new List<Message>();
 

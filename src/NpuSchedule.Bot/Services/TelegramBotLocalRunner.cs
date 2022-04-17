@@ -18,8 +18,8 @@ public class TelegramBotLocalRunner : IHostedService {
 	private readonly ILogger<TelegramBotLocalRunner> logger;
 	private readonly ITelegramBotClient client;
 
-	private CancellationTokenSource cancellationTokenSource;
-	private Task pollingTask;
+	private CancellationTokenSource? cancellationTokenSource;
+	private Task? pollingTask;
 
 	public TelegramBotLocalRunner(IOptions<TelegramBotOptions> telegramBotOptions, ITelegramBotService telegramBotService, ILogger<TelegramBotLocalRunner> logger) {
 		this.telegramBotService = telegramBotService;
@@ -39,8 +39,8 @@ public class TelegramBotLocalRunner : IHostedService {
 	/// <inheritdoc />
 	public async Task StopAsync(CancellationToken cancellationToken) {
 		logger.LogInformation("Stopping telegram polling...");
-		cancellationTokenSource.Cancel();
-		await pollingTask;
+		cancellationTokenSource?.Cancel();
+		await pollingTask!;
 	}
 
 }
