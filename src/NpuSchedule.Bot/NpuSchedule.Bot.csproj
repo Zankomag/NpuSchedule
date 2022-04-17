@@ -8,6 +8,7 @@
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <Version>0.7.2</Version>
+        <nullable>Enable</nullable>
     </PropertyGroup>
 
     <ItemGroup>
