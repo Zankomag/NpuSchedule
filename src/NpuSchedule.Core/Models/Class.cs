@@ -8,9 +8,9 @@ namespace NpuSchedule.Core.Models;
 [JsonObject(MemberSerialization.OptOut, NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 public class Class
 {
-	public int Number { get; init; }
-	public TimeSpan StartTime { get; init; }
-	public TimeSpan EndTime { get; init; }
-	public ClassInfo FirstClass { get; init; }
-	public ClassInfo SecondClass { get; init; }
+	public int Number { get; internal init; }
+	public TimeSpan StartTime { get; internal init; }
+	public TimeSpan EndTime { get; internal init; }
+	public ClassInfo FirstClass { get; internal init; }
+	public ClassInfo? SecondClass { get; internal init; }
 }

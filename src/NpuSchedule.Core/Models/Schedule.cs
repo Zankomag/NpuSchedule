@@ -8,8 +8,8 @@ namespace NpuSchedule.Core.Models;
 [JsonObject(MemberSerialization.OptOut, NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 public class Schedule {
 
-	public string GroupName { get; init; }
-	public IList<ScheduleDay> ScheduleDays { get; init; }
+	public string GroupName { get; internal init; }
+	public IList<ScheduleDay> ScheduleDays { get; internal init; }
 
 	[JsonIgnore]
 	public ScheduleType ScheduleType {

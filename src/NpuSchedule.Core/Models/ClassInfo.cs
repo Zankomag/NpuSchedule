@@ -7,9 +7,9 @@ namespace NpuSchedule.Core.Models;
 [JsonObject(MemberSerialization.OptOut, NamingStrategyType = typeof(CamelCaseNamingStrategy))]
 public class ClassInfo
 {
-    public string DisciplineName { get; init; }
-    public string Teacher { get; init; }
-    public string Classroom { get; init; }
-    public string OnlineMeetingUrl { get; init; }
-    public bool IsRemote { get; init; }
+    public string DisciplineName { get; internal init; }
+    public string? Teacher { get; internal init; }
+    public string? Classroom { get; internal init; }
+    public string? OnlineMeetingUrl { get; internal init; }
+    public bool IsRemote { get; internal init; }
 }
