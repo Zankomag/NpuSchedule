@@ -1,11 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace NpuSchedule.Common.Abstractions {
+namespace NpuSchedule.Common.Abstractions; 
 
-	public interface IStartup {
+public interface IStartup {
 
-		void ConfigureServices(IServiceCollection services);
-
-	}
+	void ConfigureServices(IServiceCollection services);
 
 }

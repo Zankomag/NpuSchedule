@@ -1,7 +1,6 @@
-namespace NpuSchedule.Common.Enums
-{
-    public enum RelativeScheduleWeek {
-        Current = 0,
-        Next = 1
-    }
+namespace NpuSchedule.Common.Enums; 
+
+public enum RelativeScheduleWeek {
+    Current = 0,
+    Next = 1
 }
