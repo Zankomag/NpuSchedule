@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-				<TargetFramework>net5.0</TargetFramework>
-				<UserSecretsId>a63e2b02-f39b-4f7c-8cec-cd61ea0f0906</UserSecretsId>
+        <TargetFramework>net6.0</TargetFramework>
+        <UserSecretsId>a63e2b02-f39b-4f7c-8cec-cd61ea0f0906</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
-			<PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
-			<PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="5.0.0" />
-			<PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
-			<PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
-			<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.0" />
-			<PackageReference Include="TimeZoneConverter" Version="3.4.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="5.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.0"/>
+        <PackageReference Include="TimeZoneConverter" Version="3.4.0"/>
     </ItemGroup>
 
 </Project>
