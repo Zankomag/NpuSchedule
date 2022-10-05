@@ -31,13 +31,12 @@ public class NmuNpuScheduleService : INpuScheduleService {
 	const string scheduleRequestUri = @"cgi-bin/timetable.cgi?n=700";
 	private readonly Uri fullScheduleRequestUri;
 
-	public NmuNpuScheduleService(IOptions<NmuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger,
-		IBrowsingContext browsingContext, IHttpClientFactory httpClientFactory) {
-		this.options = options.Value;
-		this.logger = logger;
-		this.browsingContext = browsingContext;
+	public NmuNpuScheduleService(IOptions<NmuScheduleOptions> options, ILogger<NmuNpuScheduleService> logger, IBrowsingContext browsingContext, IHttpClientFactory httpClientFactory) {
+		this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+		this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+		this.browsingContext = browsingContext ?? throw new ArgumentNullException(nameof(browsingContext));
 
-		nmuClient = httpClientFactory.CreateClient();
+		nmuClient = httpClientFactory?.CreateClient() ?? throw new ArgumentNullException(nameof(httpClientFactory));
 		nmuClient.BaseAddress = new Uri(this.options.NmuAddress);
 		fullScheduleRequestUri = new Uri(nmuClient.BaseAddress, scheduleRequestUri);
 	}
@@ -49,7 +48,7 @@ public class NmuNpuScheduleService : INpuScheduleService {
 		string rawHtml = await GetRawHtmlScheduleResponse(startDate, endDate, groupName);
 		var scheduleDays = await ParseRangeSchedule(rawHtml, maxScheduleDaysCount);
 
-		return new Schedule(groupName, scheduleDays);
+		return new Schedule(groupName, scheduleDays, startDate, endDate);
 	}
 
 	private async Task<string> GetRawHtmlScheduleResponse(DateTimeOffset startDate, DateTimeOffset endDate, string groupName) {

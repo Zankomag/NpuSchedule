@@ -47,7 +47,6 @@ public static class HostBuilderExtensions {
 				
 			configurationBuilder.AddJsonFile("appsettings.json", false)
 				.AddJsonFile($"appsettings.{hostingContext.HostingEnvironment.EnvironmentName}.json", false);
-
 			if(hostingContext.HostingEnvironment.IsDevelopment() && !String.IsNullOrEmpty(hostingContext.HostingEnvironment.ApplicationName)) {
 				configurationBuilder.AddUserSecrets<StartupBase>();
 			}

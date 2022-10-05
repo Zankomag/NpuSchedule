@@ -5,6 +5,7 @@ using Microsoft.Extensions.Hosting;
 using NpuSchedule.Bot.Services;
 using NpuSchedule.Common.Extensions;
 using NpuSchedule.Common.Utils;
+using Microsoft.AspNetCore;
 
 namespace NpuSchedule.Bot; 
 
@@ -28,12 +29,14 @@ public class LocalEntryPoint {
 			.ConfigureServices(services => services.AddHostedService<TelegramBotLocalRunner>())
 			.Build();
 
-	private static IHost GetWebHost()
-		=> new HostBuilder()
+	private static IHost GetWebHost() {
+		WebHost.CreateDefaultBuilder();
+		return new HostBuilder()
 			.AddConfiguration()
 			.ConfigureWebHost(x =>
 				x.UseKestrel((builderContext, options) => options.Configure(builderContext.Configuration.GetSection("Kestrel")))
 					.UseStartup<Startup>())
 			.Build();
+	}
 
 }

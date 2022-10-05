@@ -80,8 +80,14 @@ public class TelegramBotService : ITelegramBotService {
 		
 	private async Task SendDayScheduleAsync(RelativeScheduleDay relativeScheduleDay, long chatId, string? groupName = null) {
 		(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleDay.GetScheduleDateTimeOffsetRange();
-		var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
-		await SendDayScheduleAsync(schedule, chatId, startDate, endDate);
+		Schedule schedule;
+		try {
+			schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName, 1);
+		} catch(Exception ex) {
+			logger.LogError(ex, "Error while getting schedule");
+			throw;
+		}
+		await SendDayScheduleAsync(schedule, chatId, schedule.StartDate, schedule.EndDate);
 	}
 
 	/// <inheritdoc />
@@ -109,8 +115,14 @@ public class TelegramBotService : ITelegramBotService {
 
 	private async Task SendScheduleRangeAsync(RelativeScheduleWeek relativeScheduleWeek, long chatId, string? groupName = null) {
 		(DateTimeOffset startDate, DateTimeOffset endDate) = relativeScheduleWeek.GetScheduleWeekDateTimeOffsetRange();
-		var schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
-		await SendScheduleRangeAsync(schedule, chatId, startDate, endDate);
+		Schedule schedule;
+		try {
+			schedule = await npuScheduleService.GetSchedulesAsync(startDate, endDate, groupName);
+		} catch(Exception ex) {
+			logger.LogError(ex, "Error while getting schedule");
+			throw;
+		}
+		await SendScheduleRangeAsync(schedule, chatId, schedule.StartDate, schedule.EndDate);
 	}
 
 	/// <inheritdoc />

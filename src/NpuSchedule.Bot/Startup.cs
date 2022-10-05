@@ -18,7 +18,11 @@ public class Startup : NpuSchedule.Common.Abstractions.StartupBase {
 	public override void ConfigureServices(IServiceCollection services) {
 		services.AddNpuScheduleServices(Configuration);
 		services.AddTelegramBotServices(Configuration);
-		services.AddLogging(x => x.AddConsole());
+		services.AddLogging(x => {
+			x.AddConsole();
+			// For some reason asp net core does not read "Logging" section automatically
+			x.AddConfiguration(Configuration.GetSection("Logging"));
+		});
 		services.AddControllers()
 			.AddNewtonsoftJson(options => {
 				options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;

@@ -15,7 +15,7 @@ public static class RelativeScheduleDateExtensions {
 
 	private static readonly TimeZoneInfo npuTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
 
-	private static DateTimeOffset GetCurrentDateTimeOffset()
+	public static DateTimeOffset GetCurrentDateTimeOffset()
 		=> ConvertToNpuTimeZone(DateTimeOffset.UtcNow);
 
 	private static DateTimeOffset AddDaysToDateTimeOffset(DateTimeOffset dateTimeOffset, double daysToAdd)
