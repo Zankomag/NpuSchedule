@@ -7,7 +7,7 @@
         <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <Version>0.7.2</Version>
+        <Version>1.0.0</Version>
         <nullable>Enable</nullable>
     </PropertyGroup>
 
