@@ -15,6 +15,7 @@ public class TelegramBotOptions {
 
 	public long[] AdminIds { get; [UsedImplicitly] init; } = Array.Empty<long>();
 
+	//todo use hash map here
 	private long[] allowedChatIds = Array.Empty<long>();
 
 	/// <summary>
