@@ -31,8 +31,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 
 		this.httpClient.BaseAddress = new Uri($"https://sheets.googleapis.com/v4/spreadsheets/{this.options.GoogleSheetId}");
 	}
-
-	//TODO ADD MEMORY CACHING
+	
 	/// <inheritdoc />
 	public async Task<Schedule> GetSchedulesAsync(DateTimeOffset startDate, DateTimeOffset endDate, string? groupName = null, int maxScheduleDaysCount = Int32.MaxValue) {
 		var spreadsheet = await sheetsService.Spreadsheets.Get(options.GoogleSheetId).ExecuteAsync();

@@ -156,7 +156,9 @@ public class TelegramBotService : ITelegramBotService {
 			return;
 
 		(string command, string? groupName) = SplitMessagePayload(message, botMentionIndex, spaceIndex);
-			
+
+		//TODO ADD MEMORY CACHING for messages for 10 minutes. Add argumend -force to force cache refresh
+		
 		//Command handler has such a simple and dirty implementation because telegram bot is really simple and made mostly for demonstration purpose
 		if(options.IsChatAllowed(message.Chat.Id)) {
 			switch(command.ToLower()) {
