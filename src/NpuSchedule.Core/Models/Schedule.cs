@@ -17,7 +17,7 @@ public class Schedule {
 	[JsonIgnore]
 	public ScheduleType ScheduleType {
 		get {
-			if(ScheduleDays.Count == 1)
+			if(ScheduleDays.Count == 1 || StartDate.Date == EndDate.Date)
 				return ScheduleType.Day;
 			return ScheduleType.DateRange;
 		}
