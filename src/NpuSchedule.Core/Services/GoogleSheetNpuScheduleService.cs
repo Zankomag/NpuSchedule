@@ -81,7 +81,51 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 					Class = item.ClassInfo.EffectiveValue.StringValue.ToString().Replace("\n", " "),
 					item.ClassInfo.Hyperlink
 				})
-				.Where(x => x.Date >= startDate.Date && x.Date <= endDate.Date)
+				.Where(x => {
+					// We're comparing x.Date.Date here instead of x.Date because:
+					// x.Date >= startDate.Date call DatetimeOffset overloaded operator which 
+					// compares 2 date time offsets. Since startDate.Date is not Datetime offset, 
+					// but just a datetime taken from its DateTimeOffset ClockDateTime (so it's utc DateTime + Offset)
+					// it is a startDate in NPU timezone
+					// After that it's converted to DateTimeOffset by implicit operator (DateTime => DateTimeOffset)
+					// with default constructor: new DateTimeOffset(DateTime) 
+					// which treats given DateTime as local. Since it's local and constructor create a DateTimeOffset - 
+					// it needs a determine an offset. And it take local machine timezone offset. Here's where magic happens:
+					// It calculates absolute UTC value of DateTimeOffset data structure by subtracting local machine timezone offset 
+					// from given DateTime value. And given DateTime value is ClockDateTime value from NPU timezone. 
+					// Therefore after subtracting - UTC value of new structure can be the same startDate's ONLY if 
+					// local machine timezone is same as NPU! Otherwise if local machine timezone offset is differentfrom NPU timezone
+					// - when it comes to comparing two DateTimeOffsets:
+					// left side (which is x.Date) - is just fine.
+					// It has NPU timezone offset, therefore it's internal UTC value (absoluteUtcValue) is NPU timezone offset lesser than its ClockDateTime. 
+					// BUT for right side (which is 'new DateTimeOffset(startDate.Date) { absoluteUtcValue = startDate.Date - localMachineTimezoneOffset;  }
+					// So if, for example local machine timezone is lesser than NPU timezone - comparison will fail.  
+					//
+					// Here's an example:
+					//
+					// Local machine timezone is UTC:
+					// x.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM + 00:00 
+					// x.Date.Date.ToUniversalTime(): 10/10/2022 12:00:00 AM 
+					// startDate.ToUniversalTime(): 10/10/2022 1:31:27 AM + 00:00 
+					// startDate.Date.ToUniversalTime(): 10/10/2022 12:00:00 AM 
+					//
+					// Local machine timezone is same as NPU timezone:
+					// x.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM + 00:00 
+					// x.Date.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM 
+					// startDate.ToUniversalTime(): 10/10/2022 1:31:27 AM + 00:00 
+					// startDate.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM 
+					//
+					// As we can see - we cannot compare x.Date and startDate because startDate is ahead, therefore comparison will fail
+					// on "Local machine timezone is UTC" example we can see that it treated startDate.Date => DateTimeOffset => ToUniversalTime() 3 hours greater than 
+					// x.Date.ToUniversalTime(), while it shouldn't. That's because actual startDate.Date value is 10/10/2022 12:00:00 AM (which is correct),
+					// but since local machine timezone offset is 00:00 - it subtracted 0 from 10/10/2022 12:00:00 AM. While x.Date.ToUniversalTime()
+					// subtracted 03:00 (NPU timezone) from 10/10/2022 12:00:00 AM and got 10/9/2022 9:00:00 PM
+					// And on "Local machine timezone is same as NPU timezone" example we see that since local machine timezone offset whas 03:00 - it
+					// subtracted this from 10/10/2022 12:00:00 AM (startDate.Date) and got 10/9/2022 9:00:00 PM which is the same as x.Date.ToUniversalTime()
+					
+					// ReSharper disable once ConvertToLambdaExpression
+					return x.Date.Date >= startDate.Date && x.Date.Date <= endDate.Date;
+				})
 				.GroupBy(key => key.Date)
 				.Take(maxScheduleDaysCount)
 				.Select(rawClasses => {
