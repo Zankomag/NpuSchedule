@@ -101,7 +101,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 					// BUT for right side (which is 'new DateTimeOffset(startDate.Date) { absoluteUtcValue = startDate.Date - localMachineTimezoneOffset;  }
 					// So if, for example local machine timezone is lesser than NPU timezone - comparison will fail.  
 					//
-					// Here's an example:
+					// Here's an example of (return x.Date >= startDate.Date && x.Date <= endDate.Date;):
 					//
 					// Local machine timezone is UTC:
 					// x.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM + 00:00 
