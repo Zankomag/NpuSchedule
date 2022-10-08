@@ -45,7 +45,7 @@ public class TelegramBotService : ITelegramBotService {
 		options = telegramBotOptions.Value;
 		client = new TelegramBotClient(options.Token);
 		botUsername = new Lazy<Task<string>>(async () => await InitializeBotUsername());
-		startTime = DateTimeOffset.UtcNow.ConvertToNpuTimeZone();
+		startTime = DateTimeOffset.UtcNow.ToNpuTimeZone();
 	}
 
 	private async Task<string> InitializeBotUsername() {

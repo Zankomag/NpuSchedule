@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -38,11 +40,8 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 		var sheetTitle = spreadsheet.Sheets.First(x => x.Properties.Title.StartsWith(options.GraduationLevel, StringComparison.Ordinal)).Properties.Title;
 
 		(DateTimeOffset availableStartDate, DateTimeOffset availableEndDate) = GetWeeklySheetDateTimeRange(sheetTitle);
-		if(availableEndDate < startDate || availableStartDate > endDate)
+		if(availableEndDate.Date < startDate.Date || availableStartDate.Date > endDate.Date)
 			return new Schedule(options.GroupName, new List<ScheduleDay>(), startDate, endDate);
-
-		
-		
 		
 		// google sheets api library doesn't allow to retrieve hyperlink or any other cell data except text,
 		// this library call allows us to retrieve only text values:
@@ -79,8 +78,8 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 				.Select(item => new {
 					item!.Date,
 					item.DailyClassIndex,
-					Class = item!.ClassInfo.EffectiveValue.StringValue.ToString()!.Replace("\n", " "),
-					item!.ClassInfo.Hyperlink
+					Class = item.ClassInfo.EffectiveValue.StringValue.ToString().Replace("\n", " "),
+					item.ClassInfo.Hyperlink
 				})
 				.Where(x => x.Date >= startDate.Date && x.Date <= endDate.Date)
 				.GroupBy(key => key.Date)
@@ -117,8 +116,26 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 	private (DateTimeOffset startDate, DateTimeOffset endDate) GetWeeklySheetDateTimeRange(string sheetTitle) {
 		var dateRange = sheetTitle.Split(' ')[1].Split('-');
 		
-		DateTimeOffset endDate = DateTimeOffset.ParseExact(dateRange[1], "dd.MM", null);
-		endDate = endDate.ConvertToNpuTimeZone();
+		
+		DateTime endDateRaw = DateTime.ParseExact(dateRange[1], "dd.MM", null);
+		// On this stage we have a pure date time, but since we work with NPU time zone, 
+		// we need to wrap it as NPU timezone, since if we try to parse it right to DateTimeOffset 
+		// when our Local timezone is different from NPU - it will result in being lesser in UTC then 
+		// requested border start and end dateTimeOffsets 
+		//
+		// Take an example:
+		// requested start DateTimeOffset is 2022-10-10 01:00:00 +03:00 
+		// application machine's local timezone is UTC (+00:00)
+		// dataRange[1] is "10.10"
+		// available end DateTimeOffset will be 2022-10-10 00:00:00 +00:00
+		// when comparing requested start date and available end date, then converted to UTC, therefore:
+		// requested start date will be: 2022-10-09 22:00:00
+		// available end date will be: 2022-10-10 00:00:00
+		// meaning that while without offset we have requested and available ranges overlapping with one day,
+		// technically we cannot provide any schedule for requested date as by absolute UTC value they differ with one day by Date parameter
+		// this wouldn't happen if available end DateTimeOffset was 2022-10-10 00:00:00 +03:00
+		DateTimeOffset endDate = new DateTimeOffset(endDateRaw, RelativeScheduleDateExtensions.NpuTimeZone.GetUtcOffset(endDateRaw));
+			
 		
 		if(endDate.DayOfWeek != DayOfWeek.Friday)
 			throw new Exception($"End date day of week should be Friday, but was {endDate.DayOfWeek}");

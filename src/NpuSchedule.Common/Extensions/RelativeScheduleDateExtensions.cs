@@ -13,16 +13,16 @@ public static class RelativeScheduleDateExtensions {
 	private const string timeZoneId = "FLE Standard Time";
 	private const int daysToSearchForClosestScheduleDay = 30;
 
-	private static readonly TimeZoneInfo npuTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
+	public static readonly TimeZoneInfo NpuTimeZone = TZConvert.GetTimeZoneInfo(timeZoneId);
 
 	public static DateTimeOffset GetCurrentDateTimeOffset()
-		=> ConvertToNpuTimeZone(DateTimeOffset.UtcNow);
+		=> ToNpuTimeZone(DateTimeOffset.UtcNow);
 
 	private static DateTimeOffset AddDaysToDateTimeOffset(DateTimeOffset dateTimeOffset, double daysToAdd)
-		=> TimeZoneInfo.ConvertTime(dateTimeOffset.ToUniversalTime().AddDays(daysToAdd), npuTimeZone);
+		=> TimeZoneInfo.ConvertTime(dateTimeOffset.ToUniversalTime().AddDays(daysToAdd), NpuTimeZone);
 
-	public static DateTimeOffset ConvertToNpuTimeZone(this DateTimeOffset dateTimeOffset)
-		=> TimeZoneInfo.ConvertTime(dateTimeOffset, npuTimeZone);
+	public static DateTimeOffset ToNpuTimeZone(this DateTimeOffset dateTimeOffset)
+		=> TimeZoneInfo.ConvertTime(dateTimeOffset, NpuTimeZone);
 
 	/// <summary>
 	///     Normally returns zero-range date (for example 14/11 - 14/11) but in cases of weekends adds them to range
@@ -74,7 +74,7 @@ public static class RelativeScheduleDateExtensions {
 		=> (dateTimeOffset, dateTimeOffset);
 
 	public static bool IsNowDayTime() {
-		int currentHour = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, npuTimeZone).Hour;
+		int currentHour = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, NpuTimeZone).Hour;
 		return currentHour is >= 9 and <= 21;
 	}
 
