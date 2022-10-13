@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Google.Apis.Sheets.v4;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NpuSchedule.Common.Extensions;
@@ -29,7 +25,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 		this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 		this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		this.sheetsService = sheetsService ?? throw new ArgumentNullException(nameof(sheetsService));
-		this.options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+		this.options = options.Value ?? throw new ArgumentNullException(nameof(options));
 
 		this.httpClient.BaseAddress = new Uri($"https://sheets.googleapis.com/v4/spreadsheets/{this.options.GoogleSheetId}");
 	}
@@ -66,9 +62,30 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 				.Where((_, index) => index % 2 == 0)
 				.Select((rawItem, index) => {
 					if(rawItem.Values?.Count > 0) {
+						// some days have different amount of total classes in schedule, so
+						// we cannot have simple formula here
+						int daysToAddToMonday = index switch {
+							<= 7 => 0,
+							<= 14 => 1,
+							<= 22 => 2,
+							<= 30 => 3,
+							<= 36 => 4,
+							_ => throw new ArgumentOutOfRangeException(nameof(index), index, null)
+						};
+						
+						int totalClassesOfPreviousDays = index switch {
+							<= 7 => 0,
+							<= 14 => 7,
+							<= 22 => 14,
+							<= 30 => 22,
+							<= 36 => 30,
+							_ => throw new ArgumentOutOfRangeException(nameof(index), index, null)
+						};
+						
 						return new {
-							Date = availableStartDate.AddDays(index / 7 + 1 - 1),
-							DailyClassIndex = index - 7 * (index / 7) + 1,
+							// ReSharper disable once PossibleLossOfFraction
+							DateTimeOffset = availableStartDate.AddDays(daysToAddToMonday),
+							DailyClassIndex = index - totalClassesOfPreviousDays + 1,
 							ClassInfo = rawItem.Values![0]
 						};
 					}
@@ -76,14 +93,14 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 				})
 				.Where(x => x is not null)
 				.Select(item => new {
-					item!.Date,
+					item!.DateTimeOffset,
 					item.DailyClassIndex,
 					Class = item.ClassInfo.EffectiveValue.StringValue.ToString().Replace("\n", " "),
 					item.ClassInfo.Hyperlink
 				})
 				.Where(x => {
-					// We're comparing x.Date.Date here instead of x.Date because:
-					// x.Date >= startDate.Date call DatetimeOffset overloaded operator which 
+					// We're comparing x.DateTimeOffset.Date here instead of x.DateTimeOffset because:
+					// x.DateTimeOffset >= startDate.Date call DatetimeOffset overloaded operator which 
 					// compares 2 date time offsets. Since startDate.Date is not Datetime offset, 
 					// but just a datetime taken from its DateTimeOffset ClockDateTime (so it's utc DateTime + Offset)
 					// it is a startDate in NPU timezone
@@ -94,44 +111,44 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 					// It calculates absolute UTC value of DateTimeOffset data structure by subtracting local machine timezone offset 
 					// from given DateTime value. And given DateTime value is ClockDateTime value from NPU timezone. 
 					// Therefore after subtracting - UTC value of new structure can be the same startDate's ONLY if 
-					// local machine timezone is same as NPU! Otherwise if local machine timezone offset is differentfrom NPU timezone
+					// local machine timezone is same as NPU! Otherwise if local machine timezone offset is different from NPU timezone
 					// - when it comes to comparing two DateTimeOffsets:
-					// left side (which is x.Date) - is just fine.
+					// left side (which is x.DateTimeOffset) - is just fine.
 					// It has NPU timezone offset, therefore it's internal UTC value (absoluteUtcValue) is NPU timezone offset lesser than its ClockDateTime. 
 					// BUT for right side (which is 'new DateTimeOffset(startDate.Date) { absoluteUtcValue = startDate.Date - localMachineTimezoneOffset;  }
 					// So if, for example local machine timezone is lesser than NPU timezone - comparison will fail.  
 					//
-					// Here's an example of (return x.Date >= startDate.Date && x.Date <= endDate.Date;):
+					// Here's an example of (return x.DateTimeOffset >= startDate.Date && x.DateTimeOffset <= endDate.Date;):
 					//
 					// Local machine timezone is UTC:
-					// x.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM + 00:00 
-					// x.Date.Date.ToUniversalTime(): 10/10/2022 12:00:00 AM 
+					// x.DateTimeOffset.ToUniversalTime(): 10/9/2022 9:00:00 PM + 00:00 
+					// x.DateTimeOffset.Date.ToUniversalTime(): 10/10/2022 12:00:00 AM 
 					// startDate.ToUniversalTime(): 10/10/2022 1:31:27 AM + 00:00 
 					// startDate.Date.ToUniversalTime(): 10/10/2022 12:00:00 AM 
 					//
 					// Local machine timezone is same as NPU timezone:
-					// x.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM + 00:00 
-					// x.Date.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM 
+					// x.DateTimeOffset.ToUniversalTime(): 10/9/2022 9:00:00 PM + 00:00 
+					// x.DateTimeOffset.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM 
 					// startDate.ToUniversalTime(): 10/10/2022 1:31:27 AM + 00:00 
 					// startDate.Date.ToUniversalTime(): 10/9/2022 9:00:00 PM 
 					//
-					// As we can see - we cannot compare x.Date and startDate because startDate is ahead, therefore comparison will fail
+					// As we can see - we cannot compare x.DateTimeOffset and startDate because startDate is ahead, therefore comparison will fail
 					// on "Local machine timezone is UTC" example we can see that it treated startDate.Date => DateTimeOffset => ToUniversalTime() 3 hours greater than 
-					// x.Date.ToUniversalTime(), while it shouldn't. That's because actual startDate.Date value is 10/10/2022 12:00:00 AM (which is correct),
-					// but since local machine timezone offset is 00:00 - it subtracted 0 from 10/10/2022 12:00:00 AM. While x.Date.ToUniversalTime()
+					// x.DateTimeOffset.ToUniversalTime(), while it shouldn't. That's because actual startDate.Date value is 10/10/2022 12:00:00 AM (which is correct),
+					// but since local machine timezone offset is 00:00 - it subtracted 0 from 10/10/2022 12:00:00 AM. While x.DateTimeOffset.ToUniversalTime()
 					// subtracted 03:00 (NPU timezone) from 10/10/2022 12:00:00 AM and got 10/9/2022 9:00:00 PM
 					// And on "Local machine timezone is same as NPU timezone" example we see that since local machine timezone offset whas 03:00 - it
-					// subtracted this from 10/10/2022 12:00:00 AM (startDate.Date) and got 10/9/2022 9:00:00 PM which is the same as x.Date.ToUniversalTime()
+					// subtracted this from 10/10/2022 12:00:00 AM (startDate.Date) and got 10/9/2022 9:00:00 PM which is the same as x.DateTimeOffset.ToUniversalTime()
 					
 					// ReSharper disable once ConvertToLambdaExpression
-					return x.Date.Date >= startDate.Date && x.Date.Date <= endDate.Date;
+					return x.DateTimeOffset.Date >= startDate.Date && x.DateTimeOffset.Date <= endDate.Date;
 				})
-				.GroupBy(key => key.Date)
+				.GroupBy(key => key.DateTimeOffset)
 				.Take(maxScheduleDaysCount)
 				.Select(rawClasses => {
 					List<Class> classes = new List<Class>(2);
 					foreach(var classInfo in rawClasses) {
-						var classFields = classInfo.Class!.Split(',');
+						var classFields = classInfo.Class.Split(',');
 						string className = classFields[0].Trim();
 						string? teacher = classFields.Length > 1 && !String.IsNullOrWhiteSpace(classFields[1]) ? classFields[1].Trim() : null;
 
@@ -199,6 +216,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 			5 => (new TimeSpan(14, 0, 0), new TimeSpan(15, 20, 0)),
 			6 => (new TimeSpan(15, 30, 0), new TimeSpan(16, 50, 0)),
 			7 => (new TimeSpan(17, 0, 0), new TimeSpan(18, 20, 0)),
+			8 => (new TimeSpan(18, 30, 0), new TimeSpan(19, 50, 0)),
 			_ => throw new ArgumentOutOfRangeException(nameof(classIndex), classIndex, null)
 		};
 
