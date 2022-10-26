@@ -65,20 +65,20 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 						// some days have different amount of total classes in schedule, so
 						// we cannot have simple formula here
 						int daysToAddToMonday = index switch {
-							<= 7 => 0,
-							<= 14 => 1,
-							<= 22 => 2,
-							<= 30 => 3,
-							<= 36 => 4,
+							<= 8 => 0,
+							<= 15 => 1,
+							<= 23 => 2,
+							<= 31 => 3,
+							<= 37 => 4,
 							_ => throw new ArgumentOutOfRangeException(nameof(index), index, null)
 						};
 						
 						int totalClassesOfPreviousDays = index switch {
-							<= 7 => 0,
-							<= 14 => 7,
-							<= 22 => 14,
-							<= 30 => 22,
-							<= 36 => 30,
+							<= 8 => 0,
+							<= 15 => 8,
+							<= 23 => 15,
+							<= 31 => 23,
+							<= 37 => 31,
 							_ => throw new ArgumentOutOfRangeException(nameof(index), index, null)
 						};
 						
