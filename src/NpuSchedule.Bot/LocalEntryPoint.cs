@@ -29,14 +29,12 @@ public class LocalEntryPoint {
 			.ConfigureServices(services => services.AddHostedService<TelegramBotLocalRunner>())
 			.Build();
 
-	private static IHost GetWebHost() {
-		WebHost.CreateDefaultBuilder();
-		return new HostBuilder()
+	private static IHost GetWebHost() 
+		=> new HostBuilder()
 			.AddConfiguration()
 			.ConfigureWebHost(x =>
 				x.UseKestrel((builderContext, options) => options.Configure(builderContext.Configuration.GetSection("Kestrel")))
 					.UseStartup<Startup>())
 			.Build();
-	}
 
 }
