@@ -46,7 +46,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 		//
 		// so we make custom call to google sheets api selecting fields we need
 		Uri requestUri = new Uri(httpClient.BaseAddress!, $"?key={this.options.GoogleApiKey}&fields=sheets(data(rowData(values(hyperlink,effectiveValue(stringValue)))))"
-			+ $"&ranges={sheetTitle}!{options.GoogleSheetGroupColumnLetter}3:{options.GoogleSheetGroupColumnLetter}74");
+			+ $"&ranges={sheetTitle}!{options.GoogleSheetGroupColumnLetter}5:{options.GoogleSheetGroupColumnLetter}68");
 		
 		var response = await httpClient.GetAsync(requestUri).ConfigureAwait(false);
 		response.EnsureSuccessStatusCode();
@@ -95,9 +95,10 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 				.Select(item => new {
 					item!.DateTimeOffset,
 					item.DailyClassIndex,
-					Class = item.ClassInfo.EffectiveValue.StringValue.ToString().Replace("\n", " "),
+					Class = item.ClassInfo.EffectiveValue.StringValue.Replace("\n", " "),
 					item.ClassInfo.Hyperlink
 				})
+				// todo where clause below is not merged with where clause above
 				.Where(x => {
 					// We're comparing x.DateTimeOffset.Date here instead of x.DateTimeOffset because:
 					// x.DateTimeOffset >= startDate.Date call DatetimeOffset overloaded operator which 
@@ -107,7 +108,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 					// After that it's converted to DateTimeOffset by implicit operator (DateTime => DateTimeOffset)
 					// with default constructor: new DateTimeOffset(DateTime) 
 					// which treats given DateTime as local. Since it's local and constructor create a DateTimeOffset - 
-					// it needs a determine an offset. And it take local machine timezone offset. Here's where magic happens:
+					// it needs to determine an offset. And it takes local machine timezone offset. Here's where magic happens:
 					// It calculates absolute UTC value of DateTimeOffset data structure by subtracting local machine timezone offset 
 					// from given DateTime value. And given DateTime value is ClockDateTime value from NPU timezone. 
 					// Therefore after subtracting - UTC value of new structure can be the same startDate's ONLY if 
@@ -137,7 +138,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 					// x.DateTimeOffset.ToUniversalTime(), while it shouldn't. That's because actual startDate.Date value is 10/10/2022 12:00:00 AM (which is correct),
 					// but since local machine timezone offset is 00:00 - it subtracted 0 from 10/10/2022 12:00:00 AM. While x.DateTimeOffset.ToUniversalTime()
 					// subtracted 03:00 (NPU timezone) from 10/10/2022 12:00:00 AM and got 10/9/2022 9:00:00 PM
-					// And on "Local machine timezone is same as NPU timezone" example we see that since local machine timezone offset whas 03:00 - it
+					// And on "Local machine timezone is same as NPU timezone" example we see that since local machine timezone offset was 03:00 - it
 					// subtracted this from 10/10/2022 12:00:00 AM (startDate.Date) and got 10/9/2022 9:00:00 PM which is the same as x.DateTimeOffset.ToUniversalTime()
 					
 					// ReSharper disable once ConvertToLambdaExpression
@@ -152,7 +153,7 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 						string className = classFields[0].Trim();
 						string? teacher = classFields.Length > 1 && !String.IsNullOrWhiteSpace(classFields[1]) ? classFields[1].Trim() : null;
 
-						(TimeSpan startTime, TimeSpan endTime) = GetClassStartAndEndTimeFromClassIndex(classInfo.DailyClassIndex);
+						(TimeSpan startTime, TimeSpan endTime) = GetClassStartAndEndTime(classInfo.DailyClassIndex);
 
 						classes.Add(new Class(classInfo.DailyClassIndex, startTime, endTime,
 							new ClassInfo(className, teacher, null, classInfo.Hyperlink, false), null));
@@ -163,20 +164,17 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 				.ToList();
 
 			if(result.Count > 0)
-				return new Schedule(options.GroupName, result,
-					result.First().Date, result.Last().Date);
+				return new Schedule(options.GroupName, result, result.First().Date, result.Last().Date);
 
-			return new Schedule(options.GroupName, result,
-				availableStartDate, availableEndDate);
+			return new Schedule(options.GroupName, result, availableStartDate, availableEndDate);
 			
 		}
 
 		throw new Exception($"Wrong group on column {options.GoogleSheetGroupColumnLetter}");
 	}
 
-	private (DateTimeOffset startDate, DateTimeOffset endDate) GetWeeklySheetDateTimeRange(string sheetTitle) {
+	private static (DateTimeOffset startDate, DateTimeOffset endDate) GetWeeklySheetDateTimeRange(string sheetTitle) {
 		var dateRange = sheetTitle.Split(' ')[1].Split('-');
-		
 		
 		DateTime endDateRaw = DateTime.ParseExact(dateRange[1], "dd.MM", null);
 		// On this stage we have a pure date time, but since we work with NPU time zone, 
@@ -196,7 +194,6 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 		// technically we cannot provide any schedule for requested date as by absolute UTC value they differ with one day by Date parameter
 		// this wouldn't happen if available end DateTimeOffset was 2022-10-10 00:00:00 +03:00
 		DateTimeOffset endDate = new DateTimeOffset(endDateRaw, RelativeScheduleDateExtensions.NpuTimeZone.GetUtcOffset(endDateRaw));
-			
 		
 		if(endDate.DayOfWeek != DayOfWeek.Friday)
 			throw new Exception($"End date day of week should be Friday, but was {endDate.DayOfWeek}");
@@ -206,8 +203,8 @@ public class GoogleSheetNpuScheduleService : INpuScheduleService {
 
 		return (startDate, endDate);
 	}
-
-	private (TimeSpan startTime, TimeSpan endTime) GetClassStartAndEndTimeFromClassIndex(int classIndex)
+	
+	private static (TimeSpan startTime, TimeSpan endTime) GetClassStartAndEndTime(int classIndex)
 		=> classIndex switch {
 			1 => (new TimeSpan(8, 0, 0), new TimeSpan(9, 20, 0)),
 			2 => (new TimeSpan(9, 30, 0), new TimeSpan(10, 50, 0)),
